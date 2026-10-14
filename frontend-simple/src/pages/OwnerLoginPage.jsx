@@ -1,10 +1,11 @@
 // src/pages/OwnerLoginPage.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useNavigate, Link } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import './Form.css' // Dùng chung file CSS
 
-// API Đăng nhập của CHỦ HOMESTAY
+// API Đăng nhập của CHỦ HOMESTAY / ADMIN
 const API_URL = 'http://localhost:3000/api/owner/login'
 
 function OwnerLoginPage() {
@@ -14,26 +15,55 @@ function OwnerLoginPage() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const token = localStorage.getItem('ownerAuthToken')
+    const ownerStr = localStorage.getItem('ownerAuthUser')
+    if (token && ownerStr) {
+      try {
+        const owner = JSON.parse(ownerStr)
+        if (owner?.Quyen === 'admin') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/owner/dashboard')
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [navigate])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
-      const response = await axios.post(API_URL, { email, password })
+      const response = await axios.post(API_URL, { 
+        email: email.trim(), 
+        password 
+      })
 
       const { token, owner } = response.data.data
 
-      // QUAN TRỌNG: Lưu token của Owner vào một key (khóa) riêng biệt
-      // để không bị nhầm lẫn với token của Người Dùng
+      // Lưu token của Owner/Admin vào key riêng
       localStorage.setItem('ownerAuthToken', token)
       localStorage.setItem('ownerAuthUser', JSON.stringify(owner))
 
-      alert('Đăng nhập Chủ Homestay thành công!')
-      navigate('/owner/dashboard') // Chuyển đến trang quản lý
+      if (owner.Quyen === 'admin') {
+        toast.success('Đăng nhập Quản trị viên (Admin) thành công!')
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard'
+        }, 400)
+      } else {
+        toast.success('Đăng nhập Chủ Homestay thành công!')
+        setTimeout(() => {
+          window.location.href = '/owner/dashboard'
+        }, 400)
+      }
 
     } catch (err) {
       const message = err.response?.data?.message || 'Đăng nhập thất bại.'
+      toast.error(message)
       setError(message)
     } finally {
       setLoading(false)

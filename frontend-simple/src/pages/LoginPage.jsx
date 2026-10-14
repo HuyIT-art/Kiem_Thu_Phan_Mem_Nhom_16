@@ -1,5 +1,5 @@
 // src/pages/LoginPage.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useNavigate, Link } from 'react-router-dom'
 import './Form.css' // Dùng chung file CSS từ hôm qua
@@ -15,6 +15,12 @@ function LoginPage() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    if (localStorage.getItem('authToken')) {
+      navigate('/')
+    }
+  }, [navigate])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -23,7 +29,7 @@ function LoginPage() {
     try {
       // 1. Gọi API đăng nhập
       const response = await axios.post(API_URL, {
-        email: email,
+        email: email.trim(),
         password: password,
       })
 
@@ -31,18 +37,15 @@ function LoginPage() {
       const { token, user } = response.data.data
 
       // 3. (QUAN TRỌNG) Lưu vào localStorage
-      // localStorage là bộ nhớ của trình duyệt, nó sẽ
-      // lưu lại kể cả khi bạn tắt tab
       localStorage.setItem('authToken', token)
       localStorage.setItem('authUser', JSON.stringify(user)) // Lưu user dưới dạng chuỗi JSON
 
-      toast.success('Đăng nhập thành công!')
+      toast.success('Đăng nhập thành công! Đang chuyển hướng...')
 
-      // 4. Chuyển hướng về trang chủ
-      navigate('/') 
-
-      // Tải lại trang để header cập nhật
-      window.location.reload()
+      // 4. Chuyển hướng về trang chủ và nạp lại để header cập nhật
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 400)
 
     } catch (err) {
       const message = err.response?.data?.message || 'Đăng nhập thất bại.'

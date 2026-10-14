@@ -12,6 +12,7 @@ export const getAllUsers = async () => {
       Email: true,
       SoDienThoai: true,
       DiaChi: true,
+      isActive: true, // Trả về trạng thái hoạt động
       // Tuyệt đối không trả về MatKhau
     },
   });
@@ -31,6 +32,7 @@ export const getAllOwners = async () => {
       DiaChi: true,
       SoCCCD: true,
       Quyen: true, // Hiển thị quyền (admin/chu_homestay)
+      isActive: true, // Trả về trạng thái hoạt động
       created_at: true,
     },
   });
@@ -249,7 +251,7 @@ export const getAllBookings = async () => {
 
 export const updateBookingStatus = async (bookingId, newStatus) => {
   // 1. Kiểm tra xem trạng thái có hợp lệ không
-  const validStatus = ['DaXacNhan', 'DaHuy', 'ChoXacNhan'];
+  const validStatus = ['ChoXacNhan', 'DaXacNhan', 'DangLuuTru', 'DaHoanThanh', 'DaHuy'];
   if (!validStatus.includes(newStatus)) {
     throw new Error('Trạng thái cập nhật không hợp lệ');
   }
@@ -296,4 +298,169 @@ export const getAllComplaints = async () => {
   });
   return complaints;
 };
+
+/**
+ * (Admin) Lấy thống kê tổng quan toàn hệ thống
+ */
+export const getDashboardStats = async () => {
+  const [
+    totalUsers,
+    totalOwners,
+    totalHomestays,
+    pendingHomestays,
+    allBookings,
+    allComplaints,
+    allTransactions,
+    recentBookings,
+    recentTransactions
+  ] = await Promise.all([
+    prisma.nGUOI_DUNG.count(),
+    prisma.cHU_HOMESTAY.count(),
+    prisma.hOMESTAY.count(),
+    prisma.hOMESTAY.count({ where: { TrangThaiDuyet: 'ChoDuyet' } }),
+    prisma.dAT_PHONG.findMany({
+      select: {
+        Gia: true,
+        TrangThai: true,
+        TrangThaiThanhToan: true
+      }
+    }),
+    prisma.kHIEU_NAI.findMany({
+      select: { TrangThai: true }
+    }),
+    prisma.gIAO_DICH.findMany({
+      select: { SoTien: true, TrangThai: true }
+    }),
+    prisma.dAT_PHONG.findMany({
+      take: 6,
+      orderBy: { created_at: 'desc' },
+      include: {
+        NGUOI_DUNG: { select: { HoTen: true, Email: true } },
+        CHI_TIET_DAT_PHONG: {
+          include: {
+            HOMESTAY: { select: { TenHomestay: true } }
+          }
+        }
+      }
+    }),
+    prisma.gIAO_DICH.findMany({
+      take: 6,
+      orderBy: { created_at: 'desc' },
+      include: {
+        DAT_PHONG: {
+          include: {
+            NGUOI_DUNG: { select: { HoTen: true, Email: true } },
+            CHI_TIET_DAT_PHONG: {
+              include: {
+                HOMESTAY: { select: { TenHomestay: true } }
+              }
+            }
+          }
+        }
+      }
+    })
+  ]);
+
+  let totalRevenue = 0;
+  let confirmedBookings = 0;
+  let pendingBookings = 0;
+  let completedBookings = 0;
+  let cancelledBookings = 0;
+
+  allBookings.forEach((b) => {
+    if (b.TrangThai === 'DaXacNhan' || b.TrangThai === 'DangLuuTru' || b.TrangThai === 'DaHoanThanh') {
+      totalRevenue += parseFloat(b.Gia || 0);
+    }
+    if (b.TrangThai === 'DaXacNhan') confirmedBookings++;
+    else if (b.TrangThai === 'ChoXacNhan') pendingBookings++;
+    else if (b.TrangThai === 'DaHoanThanh') completedBookings++;
+    else if (b.TrangThai === 'DaHuy') cancelledBookings++;
+  });
+
+  const pendingComplaints = allComplaints.filter((c) => c.TrangThai === 'ChuaXuLy').length;
+  const successfulTransactions = allTransactions.filter((t) => t.TrangThai === 'ThanhCong').length;
+
+  return {
+    totalUsers,
+    totalOwners,
+    totalHomestays,
+    pendingHomestays,
+    totalBookings: allBookings.length,
+    confirmedBookings,
+    pendingBookings,
+    completedBookings,
+    cancelledBookings,
+    totalComplaints: allComplaints.length,
+    pendingComplaints,
+    totalRevenue,
+    totalTransactions: allTransactions.length,
+    successfulTransactions,
+    recentBookings,
+    recentTransactions
+  };
+};
+
+/**
+ * (Admin) Duyệt hoặc từ chối Homestay
+ */
+export const updateHomestayApproval = async (homestayId, status) => {
+  const validStatus = ['ChoDuyet', 'DaDuyet', 'TuChoi'];
+  if (!validStatus.includes(status)) {
+    throw new Error('Trạng thái duyệt không hợp lệ. Chỉ chấp nhận: ChoDuyet, DaDuyet, TuChoi');
+  }
+
+  const homestay = await prisma.hOMESTAY.findUnique({
+    where: { MaHomestay: homestayId }
+  });
+
+  if (!homestay) {
+    throw new Error('Không tìm thấy homestay');
+  }
+
+  const updatedHomestay = await prisma.hOMESTAY.update({
+    where: { MaHomestay: homestayId },
+    data: { TrangThaiDuyet: status }
+  });
+
+  return updatedHomestay;
+};
+
+/**
+ * (Admin) Lấy tất cả giao dịch thanh toán
+ */
+export const getAllTransactions = async () => {
+  const transactions = await prisma.gIAO_DICH.findMany({
+    include: {
+      DAT_PHONG: {
+        include: {
+          NGUOI_DUNG: { select: { HoTen: true, Email: true, SoDienThoai: true } },
+          CHI_TIET_DAT_PHONG: {
+            include: {
+              HOMESTAY: { select: { MaHomestay: true, TenHomestay: true } }
+            }
+          }
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return transactions;
+};
+
+/**
+ * (Admin) Lấy tất cả đánh giá
+ */
+export const getAllReviews = async () => {
+  const reviews = await prisma.dANH_GIA.findMany({
+    include: {
+      NGUOI_DUNG: { select: { HoTen: true, Email: true } },
+      HOMESTAY: { select: { MaHomestay: true, TenHomestay: true } }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return reviews;
+};
+
 

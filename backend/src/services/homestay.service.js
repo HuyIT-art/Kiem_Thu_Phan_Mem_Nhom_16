@@ -9,7 +9,10 @@ export const getAllHomestays = async (queryParams) => {
   const { searchQuery, soKhachToiDa, giaMin, giaMax } = queryParams;
 
   const filters = {
-    AND: [],
+    AND: [
+      { isActive: true },
+      { TrangThaiDuyet: 'DaDuyet' }
+    ],
   };
 
   // 2. (Logic OR)
@@ -17,8 +20,8 @@ export const getAllHomestays = async (queryParams) => {
   if (searchQuery) {
     filters.AND.push({
       OR: [
-        { DiaDiem: { contains: searchQuery } },
-        { TenHomestay: { contains: searchQuery } } // Tìm cả trong Tên
+        { DiaDiem: { contains: searchQuery, mode: 'insensitive' } },
+        { TenHomestay: { contains: searchQuery, mode: 'insensitive' } } // Tìm cả trong Tên
       ]
     });
   }
@@ -205,7 +208,23 @@ export const createReview = async (userId, homestayId, reviewData) => {
     throw new Error('Không tìm thấy homestay');
   }
 
-  // 2. (MỚI) Tìm đánh giá cũ của chính người dùng này
+  // 2. (QUAN TRỌNG) KIỂM TRA ĐIỀU KIỆN LƯU TRÚ:
+  // Khách hàng PHẢI có ít nhất 1 đơn đặt phòng đã hoàn thành ('DaHoanThanh') tại homestay này
+  const completedBooking = await prisma.dAT_PHONG.findFirst({
+    where: {
+      MaNguoiDung: userId,
+      CHI_TIET_DAT_PHONG: {
+        some: { MaHomestay: homestayId },
+      },
+      TrangThai: 'DaHoanThanh',
+    },
+  });
+
+  if (!completedBooking) {
+    throw new Error('Chỉ khách hàng đã hoàn thành kỳ nghỉ (trạng thái Đã hoàn thành) tại homestay này mới có thể gửi đánh giá.');
+  }
+
+  // 3. Tìm đánh giá cũ của chính người dùng này
   const existingReview = await prisma.dANH_GIA.findFirst({
     where: {
       MaNguoiDung: userId,
@@ -213,26 +232,25 @@ export const createReview = async (userId, homestayId, reviewData) => {
     }
   });
 
-  // 3. Chuẩn bị dữ liệu
+  // 4. Chuẩn bị dữ liệu
   const dataToSave = {
-    // Logic || 5 vẫn giữ nguyên (nếu gửi 0 sao, sẽ lưu là 5)
     SoSao: reviewData.soSao || 5, 
     BinhLuan: reviewData.binhLuan,
   };
 
   if (existingReview) {
-    // --- 4a. Nếu ĐÃ TÌM THẤY: CẬP NHẬT ---
+    // 4a. Cập nhật đánh giá cũ
     console.log(`Updating review for user ${userId} on homestay ${homestayId}`);
     const updatedReview = await prisma.dANH_GIA.update({
       where: {
-        MaDanhGia: existingReview.MaDanhGia // Cập nhật dựa trên ID đánh giá cũ
+        MaDanhGia: existingReview.MaDanhGia
       },
       data: dataToSave,
     });
     return updatedReview;
 
   } else {
-    // --- 4b. Nếu KHÔNG TÌM THẤY: TẠO MỚI ---
+    // 4b. Tạo đánh giá mới
     console.log(`Creating new review for user ${userId} on homestay ${homestayId}`);
     const newReview = await prisma.dANH_GIA.create({
       data: {
@@ -243,6 +261,34 @@ export const createReview = async (userId, homestayId, reviewData) => {
     });
     return newReview;
   }
+};
+
+/**
+ * Kiểm tra xem người dùng hiện tại có đủ điều kiện đánh giá homestay hay không
+ */
+export const checkCanReview = async (userId, homestayId) => {
+  if (!userId) {
+    return { canReview: false, reason: 'Bạn cần đăng nhập để đánh giá' };
+  }
+
+  const completedBooking = await prisma.dAT_PHONG.findFirst({
+    where: {
+      MaNguoiDung: userId,
+      CHI_TIET_DAT_PHONG: {
+        some: { MaHomestay: homestayId },
+      },
+      TrangThai: 'DaHoanThanh',
+    },
+  });
+
+  if (!completedBooking) {
+    return {
+      canReview: false,
+      reason: 'Chỉ khách hàng đã hoàn thành kỳ nghỉ (trạng thái Đã hoàn thành) tại homestay này mới có thể gửi đánh giá.',
+    };
+  }
+
+  return { canReview: true };
 };
 
 export const bookHomestay = async (userId, homestayId, bookingData) => {
@@ -257,29 +303,56 @@ export const bookHomestay = async (userId, homestayId, bookingData) => {
     throw new Error('Không tìm thấy homestay');
   }
 
+  if (homestay.isActive === false || homestay.TrangThaiDuyet !== 'DaDuyet') {
+    throw new Error('Homestay hiện không nhận đặt phòng');
+  }
+
   // 2. Kiểm tra số lượng khách
   if (soLuongKhach > homestay.SoKhachToiDa) {
     throw new Error('Số lượng khách vượt quá mức cho phép');
   }
 
-  // 3. Tính toán cơ bản
+  // 3. Tính toán và kiểm tra ngày nhận/trả
   const ngayNhanDate = new Date(ngayNhan);
   const ngayTraDate = new Date(ngayTra);
-  const soDem = (ngayTraDate - ngayNhanDate) / (1000 * 60 * 60 * 24); // Tính số đêm
+
+  if (isNaN(ngayNhanDate.getTime()) || isNaN(ngayTraDate.getTime())) {
+    throw new Error('Ngày nhận hoặc ngày trả phòng không hợp lệ');
+  }
+
+  const soDem = (ngayTraDate - ngayNhanDate) / (1000 * 60 * 60 * 24);
 
   if (soDem <= 0) {
-    throw new Error('Ngày trả phải sau ngày nhận');
+    throw new Error('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm');
   }
 
   // 'Gia' trong HOMESTAY là giá 1 đêm, 'Gia' trong DAT_PHONG là tổng tiền
   const tongGia = parseFloat(homestay.Gia) * soDem;
 
-  // 4. (Quan trọng) Sử dụng Transaction
-  // Ghi vào 2 bảng: DAT_PHONG và CHI_TIET_DAT_PHONG
-  // $transaction đảm bảo rằng cả hai lệnh CÙNG thành công,
-  // hoặc CÙNG thất bại (không bao giờ có chuyện tạo được 1 mà hỏng 1)
-  
+  // 4. (Quan trọng) Sử dụng Transaction kiểm tra chống trùng lịch (Anti-overbooking)
   const newBooking = await prisma.$transaction(async (tx) => {
+    // KIỂM TRA TRÙNG LỊCH:
+    // Khoảng ngày mới [ngayNhanDate, ngayTraDate) bị trùng nếu:
+    // (NgayNhanCu < ngayTraDate) VÀ (NgayTraCu > ngayNhanDate)
+    const conflictBooking = await tx.dAT_PHONG.findFirst({
+      where: {
+        CHI_TIET_DAT_PHONG: {
+          some: { MaHomestay: homestayId },
+        },
+        TrangThai: {
+          in: ['ChoXacNhan', 'DaXacNhan', 'DangLuuTru'],
+        },
+        AND: [
+          { NgayNhan: { lt: ngayTraDate } },
+          { NgayTra: { gt: ngayNhanDate } },
+        ],
+      },
+    });
+
+    if (conflictBooking) {
+      throw new Error('Khoảng thời gian này đã có khách đặt hoặc đang chờ xác nhận. Vui lòng chọn ngày khác.');
+    }
+
     // a. Tạo đơn đặt phòng (model DAT_PHONG)
     const datPhong = await tx.dAT_PHONG.create({
       data: {
@@ -288,17 +361,17 @@ export const bookHomestay = async (userId, homestayId, bookingData) => {
         NgayTra: ngayTraDate,
         SoLuong: soLuongKhach,
         Gia: tongGia,
-        TrangThai: 'ChoXacNhan', // Mặc định khi mới đặt
+        TrangThai: 'ChoXacNhan',
+        TrangThaiThanhToan: 'ChuaThanhToan',
       },
     });
 
     // b. Tạo chi tiết đơn (model CHI_TIET_DAT_PHONG)
-    // Giả sử đặt 1 homestay này với số lượng 1
     await tx.cHI_TIET_DAT_PHONG.create({
       data: {
-        MaDatPhong: datPhong.MaDatPhong, // Lấy ID từ bước (a)
+        MaDatPhong: datPhong.MaDatPhong,
         MaHomestay: homestayId,
-        SoLuongPhong: 1, // Giả sử là 1 (bạn có thể thay đổi logic này)
+        SoLuongPhong: 1,
       },
     });
     
@@ -381,15 +454,46 @@ export const deleteHomestay = async (homestayId, ownerId) => {
     throw new Error('Không có quyền xóa homestay này'); // Lỗi 403
   }
 
-  // 3. Xóa homestay
-  // Lưu ý: Nhờ 'onDelete: Cascade' trong schema, khi bạn xóa homestay,
-  // tất cả HINH_ANH, DANH_GIA, CHI_TIET_DAT_PHONG liên quan sẽ tự động bị xóa.
-  await prisma.hOMESTAY.delete({
+  // 3. Xóa homestay dạng soft-delete (vô hiệu hóa) để bảo tồn lịch sử booking và doanh thu
+  await prisma.hOMESTAY.update({
     where: { MaHomestay: homestayId },
+    data: { isActive: false }
   });
 
   return; // Xóa thành công, không cần trả về gì
 };
+
+export const getHomestayAvailability = async (homestayId) => {
+  const activeBookings = await prisma.dAT_PHONG.findMany({
+    where: {
+      CHI_TIET_DAT_PHONG: {
+        some: { MaHomestay: parseInt(homestayId) }
+      },
+      TrangThai: {
+        in: ['ChoXacNhan', 'DaXacNhan', 'DangLuuTru']
+      }
+    },
+    select: {
+      NgayNhan: true,
+      NgayTra: true,
+      TrangThai: true
+    }
+  });
+
+  const bookedRanges = activeBookings.map(b => ({
+    startDate: b.NgayNhan,
+    endDate: b.NgayTra,
+    status: b.TrangThai
+  }));
+
+  return {
+    homestayId: parseInt(homestayId),
+    totalUnits: 1,
+    unitType: 'Nguyên căn / Phòng độc lập',
+    bookedRanges
+  };
+};
+
 
 export const uploadImages = async (homestayId, ownerId, files) => {
   // 1. Kiểm tra quyền sở hữu

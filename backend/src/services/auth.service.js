@@ -4,10 +4,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export const registerUser = async (userData) => {
+  const normalizedEmail = userData.email?.trim().toLowerCase();
   // 1. Kiểm tra email
-  // Sửa 'prisma.user' thành 'prisma.nGUOI_DUNG'
   const existingUser = await prisma.nGUOI_DUNG.findUnique({
-    where: { Email: userData.email }, // userData.email là dữ liệu từ JSON body
+    where: { Email: normalizedEmail },
   });
 
   if (existingUser) {
@@ -18,34 +18,27 @@ export const registerUser = async (userData) => {
   const hashedPassword = await bcrypt.hash(userData.password, 12);
 
   // 3. Tạo user - Ánh xạ tới đúng tên trường trong schema
-  // Sửa 'prisma.user' thành 'prisma.nGUOI_DUNG'
   const user = await prisma.nGUOI_DUNG.create({
     data: {
-      // Ánh xạ 'fullName' từ body sang 'HoTen' của database
-      HoTen: userData.fullName, 
-      
-      // Ánh xạ 'email' từ body sang 'Email' của database
-      Email: userData.email,    
-      
-      // Ánh xạ 'password' từ body sang 'MatKhau' của database
+      HoTen: userData.fullName?.trim(), 
+      Email: normalizedEmail,    
       MatKhau: hashedPassword, 
-      SoDienThoai: userData.soDienThoai,
-      // Model NGUOI_DUNG không có trường 'isActive', 
-      // nên chúng ta bỏ dòng 'isActive: false' đi.
+      SoDienThoai: userData.soDienThoai?.trim() || null,
+      isActive: true,
     },
   });
 
   // 4. Xóa mật khẩu trước khi trả về
-  // Đảm bảo xóa đúng trường 'MatKhau'
   delete user.MatKhau; 
-  
   return user;
 };
+
 // Thêm hàm loginUser
 export const loginUser = async (userData) => {
+  const normalizedEmail = userData.email?.trim().toLowerCase();
   // 1. Tìm người dùng bằng email
   const user = await prisma.nGUOI_DUNG.findUnique({
-    where: { Email: userData.email },
+    where: { Email: normalizedEmail },
   });
 
   if (!user) {

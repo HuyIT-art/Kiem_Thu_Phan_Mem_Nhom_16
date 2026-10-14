@@ -9,6 +9,7 @@ const router = express.Router();
 
 // --- Public Routes ---
 router.get('/', homestayController.getAllHomestays);
+router.get('/:id/availability', homestayController.getHomestayAvailability);
 router.get('/:id', homestayController.getHomestayById);
 
 // --- Owner Routes (Dành cho CHU_HOMESTAY) ---
@@ -26,6 +27,7 @@ router.delete('/:id/favorite', protect, homestayController.removeFavorite);
 
 // Gửi đánh giá cho một homestay (yêu cầu đăng nhập)
 router.post('/:id/reviews', protect, homestayController.createReview);
+router.get('/:id/can-review', protect, homestayController.checkCanReview);
 
 // Đặt phòng (yêu cầu đăng nhập)
 router.post('/:id/book', protect, homestayController.bookHomestay);

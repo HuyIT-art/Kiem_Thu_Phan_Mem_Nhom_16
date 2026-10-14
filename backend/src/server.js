@@ -52,6 +52,6 @@ app.use('/api/bookings', bookingRoute);
 app.use('/api/complaints', complaintRoute);
 
 // Lắng nghe server
-app.listen(PORT, () => {
-  console.log(`Server đang chạy tại http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server đang chạy tại http://localhost:${PORT} và http://127.0.0.1:${PORT}`);
 });
