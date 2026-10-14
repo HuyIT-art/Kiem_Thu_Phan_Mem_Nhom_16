@@ -20,15 +20,9 @@
 9. [Tổng hợp URLs & Kiểm tra hệ thống](#9-tổng-hợp-urls--kiểm-tra-hệ-thống)
 10. [Danh sách tài khoản Demo có sẵn](#10-danh-sách-tài-khoản-demo-có-sẵn)
 11. [Hướng dẫn chi tiết luồng nghiệp vụ các phân hệ](#11-hướng-dẫn-chi-tiết-luồng-nghiệp-vụ-các-phân-hệ)
-12. [Cơ chế Thanh toán mô phỏng (Demo Payment)](#12-cơ-chế-thanh-toán-mô-phỏng-demo-payment)
-13. [Cơ chế Chống đặt trùng lịch (Conflict Prevention)](#13-cơ-chế-chống-đặt-trùng-lịch-conflict-prevention)
-14. [Quản lý tài nguyên hình ảnh (Uploads)](#14-quản-lý-tài-nguyên-hình-ảnh-uploads)
-15. [Hướng dẫn kiểm thử phần mềm (Testing)](#15-hướng-dẫn-kiểm-thử-phần-mềm-testing)
-16. [Bảng khắc phục sự cố thường gặp (Troubleshooting)](#16-bảng-khắc-phục-sự-cố-thường-gặp-troubleshooting)
-17. [Hướng dẫn Build Production](#17-hướng-dẫn-build-production)
-18. [Quy ước làm việc nhóm với Git](#18-quy-ước-làm-việc-nhóm-với-git)
-19. [Phân công nhiệm vụ & Trách nhiệm nhóm](#19-phân-công-nhiệm-vụ--trách-nhiệm-nhóm)
-20. [Hỗ trợ kỹ thuật & Đóng góp](#20-hỗ-trợ-kỹ-thuật--đóng-góp)
+12. [Hướng dẫn kiểm thử phần mềm (Testing)](#15-hướng-dẫn-kiểm-thử-phần-mềm-testing)
+13. [Bảng khắc phục sự cố thường gặp (Troubleshooting)](#16-bảng-khắc-phục-sự-cố-thường-gặp-troubleshooting)
+14. [Hướng dẫn Build Production](#17-hướng-dẫn-build-production)
 
 ---
 
