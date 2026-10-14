@@ -362,57 +362,12 @@ Sau khi chạy lệnh `npx prisma db seed`, hệ thống đã sẵn sàng các t
 
 ---
 
-## 12. CƠ CHẾ THANH TOÁN MÔ PHỎNG (DEMO PAYMENT)
 
-Để phục vụ kiểm thử và đánh giá đồ án mà không phát sinh chi phí hay phụ thuộc vào tài khoản doanh nghiệp của bên thứ ba, hệ thống tích hợp giải pháp **Thanh toán mô phỏng (Demo Payment Sandbox)**:
-
-1. **Chuẩn mã QR VietQR mô phỏng:** 
-   - Mã QR được tạo động dựa trên định dạng thanh toán nhanh Napas 24/7 với đầy đủ thông tin: Tên ngân hàng nhận, Số tài khoản thụ hưởng, Số tiền chính xác của booking, và Nội dung chuyển khoản theo cú pháp chuẩn (`BOOKING_<Mã Đơn>`).
-2. **Nút mô phỏng tương tác thực tế:**
-   - **Xác nhận thanh toán thành công:** Cập nhật trạng thái `TrangThaiThanhToan = 'DaThanhToan'`, sinh mã giao dịch mẫu `TXN-xxxxxx`, lưu vết thời gian thanh toán vào PostgreSQL.
-   - **Mô phỏng thanh toán thất bại:** Giữ nguyên trạng thái `ChuaThanhToan`, ghi log lỗi để kiểm thử luồng phục hồi khi người dùng thử lại hoặc đổi phương thức.
-3. **Phương thức tiền mặt (COD - Cash on Arrival):**
-   - Đơn đặt phòng ghi nhận phương thức thanh toán là `TienMat`.
-   - Trạng thái ban đầu là `ChuaThanhToan`. Khi khách đến nhận phòng, Chủ homestay sẽ thực hiện nút bấm xác nhận đã thu tiền mặt trên Dashboard quản lý.
-
----
-
-## 13. CƠ CHẾ CHỐNG ĐẶT TRÙNG LỊCH (CONFLICT PREVENTION)
-
-Hệ thống áp dụng thuật toán kiểm tra xung đột thời gian (Interval Overlap Detection) tại Backend Service (`backend/src/services/bookingService.js`) trước khi cho phép tạo đơn hoặc xác nhận đơn:
-
-* **Điều kiện hợp lệ cơ bản:**  
-  `NgayNhanPhong < NgayTraPhong` và `NgayNhanPhong >= Ngày hiện tại (bỏ qua phần giờ)`.
-* **Thuật toán giao nhau của hai khoảng thời gian $[A, B]$ và $[C, D]$:**  
-  Hai khoảng thời gian giao nhau khi và chỉ khi:  
-  $$A < D \quad \text{và} \quad B > C$$
-* **Áp dụng vào nghiệp vụ kiểm tra phòng:**
-  ```sql
-  SELECT * FROM "DAT_PHONG" dp
-  JOIN "CHI_TIET_DAT_PHONG" ct ON dp."MaDatPhong" = ct."MaDatPhong"
-  WHERE ct."MaHomestay" = :targetHomestayId
-    AND dp."TrangThai" IN ('ChoXacNhan', 'DaXacNhan', 'DangLuuTru')
-    AND dp."NgayNhanPhong" < :newCheckOutDate
-    AND dp."NgayTraPhong" > :newCheckInDate;
-  ```
-  Nếu kết quả trả về có đơn đặt trùng, Backend sẽ từ chối với mã lỗi `400 Bad Request` và thông điệp rõ ràng: `"Homestay đã có khách đặt trong khoảng thời gian này. Vui lòng chọn ngày khác."`
-
----
-
-## 14. QUẢN LÝ TÀI NGUYÊN HÌNH ẢNH (UPLOADS)
-
-* Toàn bộ 24 homestay mẫu đi kèm **123 file ảnh thực tế chất lượng cao** đã được lưu trữ sẵn trong thư mục `backend/uploads/` theo định dạng `hs_XX_YY.jpg` và `hs1.jpg` -> `hs23.jpg`.
-* Các file ảnh này đã được đưa vào Git để bất kỳ thành viên nào trong nhóm clone repo về cũng có đầy đủ hình ảnh homestay hiển thị ngay lập tức mà không cần mạng Internet hay phải tải lại từ đầu.
-* Khi người dùng tải ảnh mới (qua form thêm homestay hoặc đổi avatar), Multer sẽ lưu ảnh vào thư mục `backend/uploads/` và backend cung cấp qua endpoint static:
-  `http://localhost:3000/uploads/<tên-file>`
-
----
-
-## 15. HƯỚNG DẪN KIỂM THỬ PHẦN MỀM (TESTING)
+## 12. HƯỚNG DẪN KIỂM THỬ PHẦN MỀM (TESTING)
 
 Dự án phục vụ môn học **Kiểm thử phần mềm**, cấu trúc mã nguồn được thiết kế thuận tiện cho các loại hình kiểm thử:
 
-### 15.1 Kiểm thử Đơn vị & Tích hợp (API Testing)
+### 12.1 Kiểm thử Đơn vị & Tích hợp (API Testing)
 * Các file cấu hình test hoặc kịch bản kiểm thử API bằng Postman Collection / Newman / Jest có thể đặt tại thư mục `backend/tests/` hoặc thư mục gốc `tests/`.
 * Chạy kịch bản kiểm thử tự động (nếu có cấu hình script):
   ```bash
@@ -420,7 +375,7 @@ Dự án phục vụ môn học **Kiểm thử phần mềm**, cấu trúc mã n
   npm test
   ```
 
-### 15.2 Kiểm thử Chức năng & Luồng Người dùng (Manual & End-to-End Testing)
+### 12.2 Kiểm thử Chức năng & Luồng Người dùng (Manual & End-to-End Testing)
 Nhóm có thể thực hiện kiểm thử theo ma trận Test Cases mẫu:
 1. **TC-AUTH-01:** Đăng ký tài khoản với email đã tồn tại $\rightarrow$ Kỳ vọng: Báo lỗi email trùng.
 2. **TC-AUTH-02:** Đăng nhập sai mật khẩu $\rightarrow$ Kỳ vọng: Báo lỗi thông tin đăng nhập không hợp lệ.
@@ -431,7 +386,7 @@ Nhóm có thể thực hiện kiểm thử theo ma trận Test Cases mẫu:
 
 ---
 
-## 16. BẢNG KHẮC PHỤC SỰ CỐ THƯỜNG GẶP (TROUBLESHOOTING)
+## 13. BẢNG KHẮC PHỤC SỰ CỐ THƯỜNG GẶP (TROUBLESHOOTING)
 
 | Hiện tượng lỗi | Nguyên nhân gốc | Cách khắc phục |
 | :--- | :--- | :--- |
@@ -445,9 +400,9 @@ Nhóm có thể thực hiện kiểm thử theo ma trận Test Cases mẫu:
 
 ---
 
-## 17. HƯỚNG DẪN BUILD PRODUCTION
+## 14. HƯỚNG DẪN BUILD PRODUCTION
 
-### 17.1 Build Frontend
+### 14.1 Build Frontend
 ```bash
 cd frontend-simple
 npm run build
@@ -457,62 +412,10 @@ Kết quả bản build tối ưu hóa sẽ được xuất ra thư mục `front
 npm run preview
 ```
 
-### 17.2 Chạy Backend Production
+### 14.2 Chạy Backend Production
 ```bash
 cd backend
 NODE_ENV=production node server.js
 ```
-
----
-
-## 18. QUY ƯỚC LÀM VIỆC NHÓM VỚI GIT
-
-Để quá trình làm việc chung không bị xung đột mã nguồn (merge conflict), các thành viên Nhóm 16 tuân thủ nghiêm ngặt quy tắc sau:
-
-### 18.1 Quy ước đặt tên nhánh (Branching Convention)
-* Nhánh chính: `main` (chỉ chứa code đã test ổn định, không commit trực tiếp vào `main`).
-* Nhánh phát triển tính năng: `feature/<tên-chức-năng>` (ví dụ: `feature/review-rating`, `feature/booking-filter`).
-* Nhánh sửa lỗi: `bugfix/<tên-lỗi>` (ví dụ: `bugfix/qr-payment-modal`).
-* Nhánh kiểm thử: `test/<module-kiem-thu>` (ví dụ: `test/booking-api`).
-
-### 18.2 Quy ước Commit Message (Conventional Commits)
-* `feat:` Tính năng mới (ví dụ: `feat: tích hợp bộ lọc tìm kiếm homestay theo giá`)
-* `fix:` Sửa lỗi (ví dụ: `fix: sửa lỗi tính sai tổng tiền khi đặt quá 7 đêm`)
-* `docs:` Tài liệu (ví dụ: `docs: cập nhật hướng dẫn cài đặt database trong README`)
-* `style:` Định dạng giao diện, CSS, khoảng trắng (ví dụ: `style: chuẩn hóa bảng màu trang chi tiết homestay`)
-* `refactor:` Tái cấu trúc code nhưng không thay đổi chức năng (ví dụ: `refactor: tối ưu hóa booking service`)
-* `test:` Bổ sung hoặc sửa đổi kịch bản kiểm thử (ví dụ: `test: bổ sung unit test cho conflict prevention`)
-
-### 18.3 Quy trình tạo Pull Request (PR)
-1. Kéo code mới nhất từ nhánh chính: `git checkout main && git pull origin main`
-2. Tạo nhánh riêng: `git checkout -b feature/ten-tinh-nang`
-3. Thực hiện code và commit: `git commit -m "feat: mô tả công việc"`
-4. Đẩy nhánh lên GitHub: `git push -u origin feature/ten-tinh-nang`
-5. Tạo Pull Request trên GitHub vào nhánh `main` và thông báo cho nhóm trưởng / thành viên review trước khi merge.
-
----
-
-## 19. PHÂN CÔNG NHIỆM VỤ & TRÁCH NHIỆM NHÓM
-
-| STT | Thành viên | Vai trò đảm nhiệm | Nhiệm vụ chính | Ghi chú |
-| :---: | :--- | :--- | :--- | :--- |
-| **1** | **Nguyễn Văn A** | Trưởng nhóm / Full-stack | Quản lý dự án, thiết kế kiến trúc hệ thống, kiểm duyệt PR | Hoàn thành |
-| **2** | **Trần Thị B** | Frontend Developer | Thiết kế UI/UX, phân hệ Khách hàng & Trang chủ | Hoàn thành |
-| **3** | **Lê Văn C** | Backend Developer | Xây dựng RESTful API, Prisma ORM, Logic chống trùng lịch | Hoàn thành |
-| **4** | **Phạm Thị D** | QA / Tester Lead | Thiết kế kịch bản kiểm thử (Test Cases), kiểm thử thanh toán demo | Hoàn thành |
-| **5** | **Hoàng Văn E** | Database & DevOps | Quản trị PostgreSQL, viết tài liệu README, cấu hình môi trường | Hoàn thành |
-
-*(Các thành viên cập nhật lại thông tin cá nhân và nhiệm vụ chi tiết theo phân công thực tế của nhóm)*
-
----
-
-## 20. HỖ TRỢ KỸ THUẬT & ĐÓNG GÓP
-
-Nếu gặp bất kỳ khó khăn hoặc thắc mắc nào trong quá trình cài đặt và chạy ứng dụng:
-* **Tạo Issue trên GitHub:** [Gửi yêu cầu hỗ trợ (Issues)](https://github.com/HuyIT-art/Kiem_Thu_Phan_Mem_Nhom_16/issues)
-* **Kênh trao đổi nhóm:** Nhóm Zalo / Microsoft Teams của Nhóm 16.
-* **Thời gian hỗ trợ:** 24/7 từ các thành viên trong nhóm.
-
----
 *Bản quyền tài liệu thuộc về Nhóm 16 - Dự án Kiểm thử phần mềm & Phát triển phần mềm ứng dụng.*
 
