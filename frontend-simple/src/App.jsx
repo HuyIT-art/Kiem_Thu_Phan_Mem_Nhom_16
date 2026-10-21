@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Public & Customer Pages
@@ -15,7 +15,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import MyComplaintsPage from './pages/MyComplaintsPage';
 
-// Owner Auth Pages
+// Owner & Admin Auth Pages
 import OwnerLoginPage from './pages/OwnerLoginPage';
 import OwnerRegisterPage from './pages/OwnerRegisterPage';
 import OwnerForgotPasswordPage from './pages/OwnerForgotPasswordPage';
@@ -53,6 +53,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/homestays/:id" element={<HomestayDetailPage />} />
+        <Route path="/homestay/:id" element={<HomestayDetailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
@@ -90,11 +91,15 @@ function App() {
           }
         />
 
-        {/* --- Owner Auth Routes (Public) --- */}
+        {/* --- Owner & Admin Auth Routes (Public) --- */}
+        <Route path="/owner" element={<Navigate to="/owner/dashboard" replace />} />
         <Route path="/owner/login" element={<OwnerLoginPage />} />
         <Route path="/owner/register" element={<OwnerRegisterPage />} />
         <Route path="/owner/forgot-password" element={<OwnerForgotPasswordPage />} />
         <Route path="/owner/reset-password/:token" element={<OwnerResetPasswordPage />} />
+
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/login" element={<OwnerLoginPage />} />
 
         {/* --- Owner Protected Routes --- */}
         <Route

@@ -36,7 +36,7 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
     localStorage.removeItem('ownerAuthToken');
     localStorage.removeItem('ownerAuthUser');
     toast.success('Đã đăng xuất khỏi tài khoản Admin');
-    navigate('/owner/login');
+    navigate('/admin/login');
   };
 
   const navItems = [
@@ -163,4 +163,3 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
     </div>
   );
 }
-

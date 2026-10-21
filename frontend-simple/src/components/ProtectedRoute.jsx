@@ -15,7 +15,7 @@ export function ProtectedRoute({ children, role = 'user' }) {
 
     if (!token || !owner || owner.Quyen !== 'admin') {
       toast.error('Bạn không có quyền truy cập trang Quản trị viên (Admin).');
-      return <Navigate to="/owner/login" replace />;
+      return <Navigate to="/admin/login" replace />;
     }
   } else if (role === 'owner') {
     const token = localStorage.getItem('ownerAuthToken');

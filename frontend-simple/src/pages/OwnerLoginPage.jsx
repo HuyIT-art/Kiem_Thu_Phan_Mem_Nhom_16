@@ -1,7 +1,7 @@
 // src/pages/OwnerLoginPage.jsx
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import './Form.css' // Dùng chung file CSS
 
@@ -14,6 +14,8 @@ function OwnerLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
+  const location = useLocation()
+  const isAdminLoginRoute = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     const token = localStorage.getItem('ownerAuthToken')
@@ -23,14 +25,14 @@ function OwnerLoginPage() {
         const owner = JSON.parse(ownerStr)
         if (owner?.Quyen === 'admin') {
           navigate('/admin/dashboard')
-        } else {
+        } else if (!isAdminLoginRoute) {
           navigate('/owner/dashboard')
         }
       } catch {
         // ignore
       }
     }
-  }, [navigate])
+  }, [navigate, isAdminLoginRoute])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -44,6 +46,14 @@ function OwnerLoginPage() {
       })
 
       const { token, owner } = response.data.data
+
+      if (isAdminLoginRoute && owner.Quyen !== 'admin') {
+        const msg = 'Tài khoản này không có quyền Quản trị viên (Admin).'
+        toast.error(msg)
+        setError(msg)
+        setLoading(false)
+        return
+      }
 
       // Lưu token của Owner/Admin vào key riêng
       localStorage.setItem('ownerAuthToken', token)
@@ -73,14 +83,15 @@ function OwnerLoginPage() {
   return (
     <div className="form-container">
       <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Đăng Nhập Kênh Chủ Nhà</h2>
+        <h2>{isAdminLoginRoute ? 'Đăng Nhập Quản Trị Viên (Admin)' : 'Đăng Nhập Kênh Chủ Nhà'}</h2>
         {error && <p className="error-message">{error}</p>}
 
         <div className="form-group">
-          <label htmlFor="email">Email (Chủ Homestay):</label>
+          <label htmlFor="email">{isAdminLoginRoute ? 'Email Quản trị viên:' : 'Email (Chủ Homestay):'}</label>
           <input
             id="email"
             type="email"
+            placeholder={isAdminLoginRoute ? 'admin@test.com' : 'seed.owner@test.com'}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -103,7 +114,6 @@ function OwnerLoginPage() {
         </button>
 
         <div className="form-links">
-          {/* <Link to="/owner/register">Tạo tài khoản Chủ nhà</Link> */}
           <Link to="/owner/forgot-password">Quên mật khẩu?</Link>
         </div>
       </form>
