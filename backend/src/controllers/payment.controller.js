@@ -92,6 +92,9 @@ export const simulatePayment = async (req, res) => {
     if (error.message.includes('không có quyền')) {
       return res.status(403).json({ message: error.message });
     }
+    if (error.message.includes('đã có đơn khác được xác nhận')) {
+      return res.status(409).json({ message: error.message });
+    }
     if (
       error.message.includes('chờ xác nhận') ||
       error.message.includes('đã bị hủy') ||
@@ -157,4 +160,3 @@ export const getTransactions = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 };
-

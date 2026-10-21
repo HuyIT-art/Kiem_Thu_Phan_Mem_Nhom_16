@@ -21,12 +21,22 @@ export const updateBookingStatus = async (req, res) => {
       data: updatedBooking,
     });
   } catch (error) {
-    if (error.message.includes('Trạng thái cập nhật không hợp lệ')) {
-      res.status(400).json({ message: error.message }); // 400 Bad Request
-    } else if (error.message.includes('Không tìm thấy đơn đặt')) {
+    if (error.message.includes('Không tìm thấy đơn đặt')) {
       res.status(404).json({ message: error.message }); // 404 Not Found
+    } else if (error.message.includes('không có quyền')) {
+      res.status(403).json({ message: error.message }); // 403 Forbidden
+    } else if (error.message.includes('đã có đơn khác được xác nhận')) {
+      res.status(409).json({ message: error.message }); // 409 Conflict
+    } else if (
+      error.message.includes('Trạng thái cập nhật không hợp lệ') ||
+      error.message.includes('Chỉ có thể xác nhận') ||
+      error.message.includes('Chỉ có thể chuyển sang') ||
+      error.message.includes('Chỉ có thể hoàn thành') ||
+      error.message.includes('Không thể hủy')
+    ) {
+      res.status(400).json({ message: error.message }); // 400 Bad Request
     } else {
-      console.error('LỖI KHI HỦY ĐƠN:', error);
+      console.error('LỖI KHI CẬP NHẬT TRẠNG THÁI ĐƠN:', error);
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
@@ -41,14 +51,14 @@ export const createComplaint = async (req, res) => {
     const userId = req.user.MaNguoiDung; // Lấy từ middleware 'protect'
     const { noiDung } = req.body; // Lấy nội dung từ body
 
-    if (!noiDung) {
+    if (!noiDung || !noiDung.trim()) {
       return res.status(400).json({ message: 'Nội dung không được để trống' });
     }
 
     const complaint = await bookingService.createComplaint(
       bookingId,
       userId,
-      noiDung
+      noiDung.trim()
     );
 
     res.status(201).json({
@@ -62,6 +72,8 @@ export const createComplaint = async (req, res) => {
       res.status(403).json({ message: error.message });
     } else if (error.message.includes('đã khiếu nại')) {
       res.status(409).json({ message: error.message });
+    } else if (error.message.includes('Chỉ có thể gửi khiếu nại')) {
+      res.status(400).json({ message: error.message });
     } else {
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
@@ -113,7 +125,20 @@ export const createBooking = async (req, res) => {
       data: booking,
     });
   } catch (error) {
-    console.error('Lỗi khi tạo đơn đặt phòng:', error);
-    res.status(500).json({ message: 'Lỗi máy chủ.' });
+    if (error.message.includes('không tồn tại') || error.message.includes('Không tìm thấy')) {
+      res.status(404).json({ message: error.message });
+    } else if (error.message.includes('đã có khách đặt')) {
+      res.status(409).json({ message: error.message });
+    } else if (
+      error.message.includes('Số lượng khách') ||
+      error.message.includes('Ngày nhận') ||
+      error.message.includes('Ngày trả') ||
+      error.message.includes('không nhận đặt phòng')
+    ) {
+      res.status(400).json({ message: error.message });
+    } else {
+      console.error('Lỗi khi tạo đơn đặt phòng:', error);
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
+    }
   }
 };

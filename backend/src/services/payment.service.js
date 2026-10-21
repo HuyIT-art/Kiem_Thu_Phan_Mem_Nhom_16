@@ -185,6 +185,7 @@ export const simulatePayment = async (bookingId, userId, { result, reason }) => 
       NGUOI_DUNG: {
         select: { HoTen: true },
       },
+      CHI_TIET_DAT_PHONG: true,
     },
   });
 
@@ -210,10 +211,39 @@ export const simulatePayment = async (bookingId, userId, { result, reason }) => 
   if (result === 'success') {
     // Mô phỏng thành công: Cập nhật DAT_PHONG và lưu GIAO_DICH
     const { updatedBooking, transaction } = await prisma.$transaction(async (tx) => {
+      // Nếu đơn đang ở trạng thái ChoXacNhan, kiểm tra chống trùng lịch trước khi chuyển sang DaXacNhan.
+      // Nếu đơn đã ở DangLuuTru hoặc DaHoanThanh, giữ nguyên trạng thái hiện tại (tránh lùi trạng thái).
+      let nextStatus = booking.TrangThai;
+      if (booking.TrangThai === 'ChoXacNhan') {
+        const homestayId = booking.CHI_TIET_DAT_PHONG?.[0]?.MaHomestay;
+        if (homestayId) {
+          const conflict = await tx.dAT_PHONG.findFirst({
+            where: {
+              MaDatPhong: { not: bookingId },
+              CHI_TIET_DAT_PHONG: {
+                some: { MaHomestay: homestayId },
+              },
+              TrangThai: {
+                in: ['DaXacNhan', 'DangLuuTru'],
+              },
+              AND: [
+                { NgayNhan: { lt: booking.NgayTra } },
+                { NgayTra: { gt: booking.NgayNhan } },
+              ],
+            },
+          });
+
+          if (conflict) {
+            throw new Error('Không thể thanh toán và xác nhận đơn này vì đã có đơn khác được xác nhận trong cùng khoảng thời gian.');
+          }
+        }
+        nextStatus = 'DaXacNhan';
+      }
+
       const updatedBooking = await tx.dAT_PHONG.update({
         where: { MaDatPhong: bookingId },
         data: {
-          TrangThai: 'DaXacNhan', // Đã thanh toán online -> tự động xác nhận đơn
+          TrangThai: nextStatus,
           TrangThaiThanhToan: 'DaThanhToan',
           PhuongThucThanhToan: booking.PhuongThucThanhToan || 'ChuyenKhoanQR',
           NgayThanhToan: new Date(),
@@ -392,4 +422,3 @@ export const getBookingTransactions = async (bookingId, userId, ownerId = null) 
 
   return booking.GIAO_DICH;
 };
-

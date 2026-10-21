@@ -93,7 +93,9 @@ function MyBookingsPage() {
         toast.success('Hủy đơn thành công!')
         setBookings(currentBookings => 
           currentBookings.map(b => 
-            b.MaDatPhong === bookingId ? response.data.data : b
+            b.MaDatPhong === bookingId
+              ? { ...b, ...(response.data?.data || {}), TrangThai: 'DaHuy' }
+              : b
           )
         )
       } catch (err) {
@@ -125,7 +127,7 @@ function MyBookingsPage() {
           )}
 
           {bookings.map((booking) => {
-            const detail = booking.CHI_TIET_DAT_PHONG[0];
+            const detail = booking.CHI_TIET_DAT_PHONG?.[0];
             if (!detail) return null; 
 
             const homestay = detail.HOMESTAY;
@@ -213,7 +215,7 @@ function MyBookingsPage() {
                         Hủy đơn
                       </button>
                     )}
-                    {booking.TrangThai !== 'DaHuy' && (
+                    {['DaXacNhan', 'DangLuuTru', 'DaHoanThanh'].includes(booking.TrangThai) && (
                       <button 
                         className="complain-button"
                         onClick={() => handleComplain(booking.MaDatPhong)}

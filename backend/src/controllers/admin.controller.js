@@ -171,6 +171,8 @@ export const updateBookingStatus = async (req, res) => {
   } catch (error) {
     if (error.message.includes('Trạng thái cập nhật không hợp lệ')) {
       res.status(400).json({ message: error.message });
+    } else if (error.message.includes('đã có đơn khác được xác nhận')) {
+      res.status(409).json({ message: error.message });
     } else if (error.message.includes('Không tìm thấy')) {
       res.status(404).json({ message: error.message });
     } else {
@@ -213,6 +215,8 @@ export const updateOwnerRole = async (req, res) => {
   } catch (error) {
     if (error.message.includes('Không tìm thấy')) {
       res.status(404).json({ message: error.message });
+    } else if (error.message.includes('Quyền không hợp lệ')) {
+      res.status(400).json({ message: error.message });
     } else {
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
@@ -228,14 +232,14 @@ export const adminResolveComplaint = async (req, res) => {
     const adminId = req.owner.MaChu; // Lấy ID Admin từ middleware
     const { ketQua } = req.body; // Lấy nội dung phản hồi
 
-    if (!ketQua) {
+    if (!ketQua || !ketQua.trim()) {
       return res.status(400).json({ message: 'Nội dung phản hồi là bắt buộc.' });
     }
 
     const resolution = await adminService.adminResolveComplaint(
       complaintId,
       adminId,
-      ketQua
+      ketQua.trim()
     );
 
     res.status(201).json({
@@ -325,4 +329,4 @@ export const getAllReviews = async (req, res) => {
     console.error('getAllReviews error:', error);
     res.status(500).json({ message: 'Lỗi máy chủ khi lấy danh sách đánh giá.' });
   }
-};
+};

@@ -1,4 +1,5 @@
 // src/controllers/homestay.controller.js
+import jwt from 'jsonwebtoken';
 import * as homestayService from '../services/homestay.service.js';
 
 /**
@@ -33,7 +34,29 @@ export const getHomestayById = async (req, res) => {
     // Chúng ta cần chuyển nó sang kiểu số (Integer)
     const homestayId = parseInt(req.params.id);
 
-    const homestay = await homestayService.getHomestayById(homestayId);
+    // Giải mã token tùy chọn (nếu Chủ nhà hoặc Admin xem trước homestay đang chờ duyệt)
+    let requesterOwner = null;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      const token = req.headers.authorization.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          if (decoded.ownerId) {
+            requesterOwner = {
+              MaChu: decoded.ownerId,
+              Quyen: decoded.role,
+            };
+          }
+        } catch {
+          // Bỏ qua nếu token không hợp lệ, xử lý như khách vãng lai
+        }
+      }
+    }
+
+    const homestay = await homestayService.getHomestayById(homestayId, requesterOwner);
     
     res.status(200).json({
       message: 'Lấy thông tin homestay thành công!',
@@ -174,6 +197,7 @@ export const bookHomestay = async (req, res) => {
       res.status(409).json({ message: error.message });
     } else if (
       error.message.includes('Ngày trả phòng') ||
+      error.message.includes('Ngày nhận phòng') ||
       error.message.includes('Ngày nhận hoặc ngày trả') ||
       error.message.includes('Số lượng khách') ||
       error.message.includes('không nhận đặt phòng')
@@ -293,7 +317,7 @@ export const uploadImages = async (req, res) => {
     } else if (error.message.includes('Không tìm thấy')) {
       res.status(404).json({ message: error.message });
     } else {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 };

@@ -40,10 +40,13 @@ export const getAllOwners = async () => {
 };
 
 /**
- * (Admin) Lấy tất cả homestay trong hệ thống
+ * (Admin) Lấy tất cả homestay đang hoạt động trong hệ thống
  */
 export const getAllHomestays = async () => {
   const homestays = await prisma.hOMESTAY.findMany({
+    where: {
+      isActive: true,
+    },
     include: {
       CHU_HOMESTAY: { // Lấy thông tin chủ sở hữu
         select: {
@@ -194,13 +197,14 @@ export const deleteHomestay = async (homestayId) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay');
   }
 
-  // 2. Xóa homestay (Admin không cần kiểm tra quyền sở hữu)
-  await prisma.hOMESTAY.delete({
+  // 2. Xóa homestay dạng soft-delete (vô hiệu hóa) để bảo tồn lịch sử đặt phòng và giao dịch
+  await prisma.hOMESTAY.update({
     where: { MaHomestay: homestayId },
+    data: { isActive: false },
   });
 
   return;
@@ -259,19 +263,58 @@ export const updateBookingStatus = async (bookingId, newStatus) => {
   // 2. Kiểm tra xem đơn đặt có tồn tại không
   const booking = await prisma.dAT_PHONG.findUnique({
     where: { MaDatPhong: bookingId },
+    include: { CHI_TIET_DAT_PHONG: true },
   });
 
   if (!booking) {
     throw new Error('Không tìm thấy đơn đặt phòng');
   }
 
-  // 3. Cập nhật trạng thái (Admin không cần kiểm tra quyền sở hữu)
+  // Kiểm tra chống trùng lịch khi Admin chuyển sang DaXacNhan hoặc DangLuuTru
+  if (newStatus === 'DaXacNhan' || newStatus === 'DangLuuTru') {
+    const homestayId = booking.CHI_TIET_DAT_PHONG?.[0]?.MaHomestay;
+    if (homestayId) {
+      const conflict = await prisma.dAT_PHONG.findFirst({
+        where: {
+          MaDatPhong: { not: bookingId },
+          CHI_TIET_DAT_PHONG: {
+            some: { MaHomestay: homestayId },
+          },
+          TrangThai: {
+            in: ['DaXacNhan', 'DangLuuTru'],
+          },
+          AND: [
+            { NgayNhan: { lt: booking.NgayTra } },
+            { NgayTra: { gt: booking.NgayNhan } },
+          ],
+        },
+      });
+
+      if (conflict) {
+        throw new Error('Không thể xác nhận đơn này vì đã có đơn khác được xác nhận trong cùng khoảng thời gian.');
+      }
+    }
+  }
+
+  // 3. Cập nhật trạng thái kèm thông tin NGUOI_DUNG và HOMESTAY để bảng Admin không bị mất tên
   const updatedBooking = await prisma.dAT_PHONG.update({
     where: {
       MaDatPhong: bookingId,
     },
     data: {
       TrangThai: newStatus,
+    },
+    include: {
+      NGUOI_DUNG: {
+        select: { HoTen: true, Email: true },
+      },
+      CHI_TIET_DAT_PHONG: {
+        include: {
+          HOMESTAY: {
+            select: { TenHomestay: true },
+          },
+        },
+      },
     },
   });
 
@@ -316,8 +359,8 @@ export const getDashboardStats = async () => {
   ] = await Promise.all([
     prisma.nGUOI_DUNG.count(),
     prisma.cHU_HOMESTAY.count(),
-    prisma.hOMESTAY.count(),
-    prisma.hOMESTAY.count({ where: { TrangThaiDuyet: 'ChoDuyet' } }),
+    prisma.hOMESTAY.count({ where: { isActive: true } }),
+    prisma.hOMESTAY.count({ where: { isActive: true, TrangThaiDuyet: 'ChoDuyet' } }),
     prisma.dAT_PHONG.findMany({
       select: {
         Gia: true,
@@ -364,15 +407,21 @@ export const getDashboardStats = async () => {
   let totalRevenue = 0;
   let confirmedBookings = 0;
   let pendingBookings = 0;
+  let stayingBookings = 0;
   let completedBookings = 0;
   let cancelledBookings = 0;
 
   allBookings.forEach((b) => {
-    if (b.TrangThai === 'DaXacNhan' || b.TrangThai === 'DangLuuTru' || b.TrangThai === 'DaHoanThanh') {
+    // Chỉ cộng doanh thu thực tế đối với đơn không bị hủy và đã thanh toán (hoặc đã hoàn thành lưu trú)
+    if (
+      b.TrangThai !== 'DaHuy' &&
+      (b.TrangThaiThanhToan === 'DaThanhToan' || b.TrangThai === 'DaHoanThanh')
+    ) {
       totalRevenue += parseFloat(b.Gia || 0);
     }
     if (b.TrangThai === 'DaXacNhan') confirmedBookings++;
     else if (b.TrangThai === 'ChoXacNhan') pendingBookings++;
+    else if (b.TrangThai === 'DangLuuTru') stayingBookings++;
     else if (b.TrangThai === 'DaHoanThanh') completedBookings++;
     else if (b.TrangThai === 'DaHuy') cancelledBookings++;
   });
@@ -388,6 +437,7 @@ export const getDashboardStats = async () => {
     totalBookings: allBookings.length,
     confirmedBookings,
     pendingBookings,
+    stayingBookings,
     completedBookings,
     cancelledBookings,
     totalComplaints: allComplaints.length,
@@ -413,7 +463,7 @@ export const updateHomestayApproval = async (homestayId, status) => {
     where: { MaHomestay: homestayId }
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay');
   }
 
@@ -462,5 +512,3 @@ export const getAllReviews = async () => {
 
   return reviews;
 };
-
-

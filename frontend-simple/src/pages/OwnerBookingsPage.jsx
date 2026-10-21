@@ -89,7 +89,7 @@ export default function OwnerBookingsPage() {
             ? {
                 ...b,
                 TrangThaiThanhToan: 'DaThanhToan',
-                PhuongThucThanhToan: 'TIEN_MAT_KHI_NHAN_PHONG',
+                PhuongThucThanhToan: 'TienMat',
                 NgayThanhToan: new Date().toISOString()
               }
             : b
@@ -247,7 +247,7 @@ export default function OwnerBookingsPage() {
                   <div style={{ fontSize: '0.8rem', color: '#8F9D95' }}>
                     {b.PhuongThucThanhToan && (
                       <span>
-                        Phương thức: {b.PhuongThucThanhToan === 'QR_DEMO' ? '📱 QR Code Demo' : '💵 Tiền mặt khi nhận phòng'}
+                        Phương thức: {b.PhuongThucThanhToan === 'ChuyenKhoanQR' || b.PhuongThucThanhToan === 'QR_DEMO' ? '📱 QR Code Demo' : '💵 Tiền mặt khi nhận phòng'}
                       </span>
                     )}
                   </div>

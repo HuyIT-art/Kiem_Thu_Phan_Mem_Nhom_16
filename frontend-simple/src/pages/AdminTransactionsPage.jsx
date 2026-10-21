@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '../components/AdminLayout';
-import { Search, CreditCard, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, CreditCard, RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const ADMIN_API_URL = 'http://localhost:3000/api/admin';
@@ -69,8 +69,8 @@ export default function AdminTransactionsPage() {
             }}
           >
             <option value="ALL">Tất cả phương thức</option>
-            <option value="QR_DEMO">📱 QR Code Demo</option>
-            <option value="TIEN_MAT_KHI_NHAN_PHONG">💵 Tiền mặt khi nhận phòng</option>
+            <option value="ChuyenKhoanQR">📱 QR Code Demo</option>
+            <option value="TienMat">💵 Tiền mặt khi nhận phòng</option>
           </select>
 
           <div className="search-input-box">
@@ -162,13 +162,18 @@ export default function AdminTransactionsPage() {
                     </td>
                     <td>
                       <span className="status-pill neutral">
-                        {t.PhuongThuc === 'QR_DEMO' ? '📱 QR Code' : '💵 Tiền mặt'}
+                        {t.PhuongThuc === 'ChuyenKhoanQR' || t.PhuongThuc === 'QR_DEMO' ? '📱 QR Code' : '💵 Tiền mặt'}
                       </span>
                     </td>
                     <td>
-                      <span className={`status-pill ${t.TrangThai === 'ThanhCong' ? 'success' : 'danger'}`}>
-                        {t.TrangThai === 'ThanhCong' ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                        {t.TrangThai === 'ThanhCong' ? 'Thành công' : 'Thất bại'}
+                      <span className={`status-pill ${
+                        t.TrangThai === 'ThanhCong' ? 'success' :
+                        t.TrangThai === 'ChoThanhToan' ? 'warning' : 'danger'
+                      }`}>
+                        {t.TrangThai === 'ThanhCong' ? <CheckCircle2 size={13} /> :
+                         t.TrangThai === 'ChoThanhToan' ? <Clock size={13} /> : <XCircle size={13} />}
+                        {t.TrangThai === 'ThanhCong' ? 'Thành công' :
+                         t.TrangThai === 'ChoThanhToan' ? 'Chờ thanh toán' : 'Thất bại'}
                       </span>
                     </td>
                     <td>
@@ -194,4 +199,3 @@ export default function AdminTransactionsPage() {
     </AdminLayout>
   );
 }
-

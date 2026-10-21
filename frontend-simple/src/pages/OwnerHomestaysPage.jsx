@@ -90,7 +90,9 @@ export default function OwnerHomestaysPage() {
 
   const handleHomestayUpdated = (updatedHomestay) => {
     setMyHomestays((current) =>
-      current.map((h) => (h.MaHomestay === updatedHomestay.MaHomestay ? updatedHomestay : h))
+      current.map((h) =>
+        h.MaHomestay === updatedHomestay.MaHomestay ? { ...h, ...updatedHomestay } : h
+      )
     );
   };
 

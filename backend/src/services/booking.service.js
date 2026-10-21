@@ -90,6 +90,25 @@ export const updateBookingStatus = async (bookingId, ownerId, newStatus) => {
     data: {
       TrangThai: newStatus,
     },
+    include: {
+      NGUOI_DUNG: {
+        select: {
+          HoTen: true,
+          Email: true,
+          SoDienThoai: true,
+        },
+      },
+      CHI_TIET_DAT_PHONG: {
+        include: {
+          HOMESTAY: {
+            select: { TenHomestay: true },
+          },
+        },
+      },
+      GIAO_DICH: {
+        orderBy: { created_at: 'desc' },
+      },
+    },
   });
 
   return updatedBooking;
@@ -110,7 +129,11 @@ export const createComplaint = async (bookingId, userId, content) => {
     throw new Error('Bạn không có quyền khiếu nại đơn này'); // Lỗi 403
   }
 
-  // (Nâng cao: Bạn có thể kiểm tra xem đơn đã hoàn thành chưa, v.v.)
+  // Kiểm tra trạng thái đơn: chỉ cho phép khiếu nại khi đơn đã xác nhận, đang lưu trú hoặc đã hoàn thành
+  const allowedComplaintStatuses = ['DaXacNhan', 'DangLuuTru', 'DaHoanThanh'];
+  if (!allowedComplaintStatuses.includes(booking.TrangThai)) {
+    throw new Error('Chỉ có thể gửi khiếu nại đối với đơn đặt phòng đã được xác nhận, đang lưu trú hoặc đã hoàn thành'); // Lỗi 400
+  }
 
   // 3. Kiểm tra xem đã khiếu nại đơn này chưa
   // 'kHIEU_NAI' là tên model Prisma
@@ -155,11 +178,25 @@ export const cancelMyBooking = async (bookingId, userId) => {
     throw new Error('Không thể hủy đơn đã được xác nhận hoặc đã bị hủy'); // Lỗi 400
   }
 
-  // 4. Cập nhật trạng thái thành "DaHuy"
+  // 4. Cập nhật trạng thái thành "DaHuy" kèm đầy đủ thông tin chi tiết để UI không bị crash
   const updatedBooking = await prisma.dAT_PHONG.update({
     where: { MaDatPhong: bookingId },
     data: {
       TrangThai: 'DaHuy',
+    },
+    include: {
+      CHI_TIET_DAT_PHONG: {
+        include: {
+          HOMESTAY: {
+            include: {
+              HINH_ANH: true,
+            },
+          },
+        },
+      },
+      GIAO_DICH: {
+        orderBy: { created_at: 'desc' },
+      },
     },
   });
 
@@ -167,7 +204,7 @@ export const cancelMyBooking = async (bookingId, userId) => {
 };
 
 /**
- * Tạo đơn đặt phòng mới cho người dùng
+ * Tạo đơn đặt phòng mới cho người dùng (Đã đồng bộ kiểm tra điều kiện và chống trùng lịch)
  */
 export const createBooking = async (userId, homestayId, bookingData) => {
   const { NgayNhan, NgayTra, SoLuong } = bookingData; // Bỏ 'Gia' ở đây, ta sẽ tự tính
@@ -181,42 +218,87 @@ export const createBooking = async (userId, homestayId, bookingData) => {
     throw new Error('Homestay không tồn tại');
   }
 
-  // 2. Tính toán số ngày lưu trú
+  if (homestay.isActive === false || homestay.TrangThaiDuyet !== 'DaDuyet') {
+    throw new Error('Homestay hiện không nhận đặt phòng');
+  }
+
+  const parsedGuests = parseInt(SoLuong);
+  if (isNaN(parsedGuests) || parsedGuests < 1) {
+    throw new Error('Số lượng khách phải từ 1 người trở lên');
+  }
+  if (parsedGuests > homestay.SoKhachToiDa) {
+    throw new Error('Số lượng khách vượt quá mức cho phép');
+  }
+
+  // 2. Tính toán và kiểm tra ngày lưu trú
   const startDate = new Date(NgayNhan);
   const endDate = new Date(NgayTra);
 
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    throw new Error('Ngày nhận hoặc ngày trả phòng không hợp lệ');
+  }
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  if (startDate < todayStart) {
+    throw new Error('Ngày nhận phòng không được nằm trong quá khứ');
+  }
+
   // Tính hiệu số mili-giây: (1000ms * 60s * 60m * 24h = 86400000)
   const differenceInTime = endDate.getTime() - startDate.getTime();
-  let soNgay = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+  const soNgay = Math.ceil(differenceInTime / (1000 * 3600 * 24));
 
-  // Nếu khách chọn ngày đi trùng ngày về (0 ngày) hoặc lỗi, mặc định tính ít nhất 1 đêm
-  if (soNgay <= 0) soNgay = 1;
+  if (soNgay <= 0) {
+    throw new Error('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm');
+  }
 
   // 3. TÍNH TỔNG TIỀN = Giá gốc * Số ngày
-  const tongTien = homestay.Gia * soNgay;
+  const tongTien = parseFloat(homestay.Gia) * soNgay;
 
-  // 4. Tạo đơn với giá đã tính toán
-  const newBooking = await prisma.dAT_PHONG.create({
-    data: {
-      MaNguoiDung: userId,
-      NgayNhan: startDate,
-      NgayTra: endDate,
-      SoLuong: SoLuong,
-      Gia: tongTien, // <--- Lưu giá do Backend tính
-      TrangThai: 'ChoXacNhan',
-      CHI_TIET_DAT_PHONG: {
-        create: {
-          MaHomestay: homestayId,
-          SoLuongPhong: 1, 
+  // 4. Tạo đơn với giá đã tính toán và kiểm tra chống trùng lịch trong Transaction
+  const newBooking = await prisma.$transaction(async (tx) => {
+    const conflictBooking = await tx.dAT_PHONG.findFirst({
+      where: {
+        CHI_TIET_DAT_PHONG: {
+          some: { MaHomestay: homestayId },
+        },
+        TrangThai: {
+          in: ['ChoXacNhan', 'DaXacNhan', 'DangLuuTru'],
+        },
+        AND: [
+          { NgayNhan: { lt: endDate } },
+          { NgayTra: { gt: startDate } },
+        ],
+      },
+    });
+
+    if (conflictBooking) {
+      throw new Error('Khoảng thời gian này đã có khách đặt hoặc đang chờ xác nhận. Vui lòng chọn ngày khác.');
+    }
+
+    return await tx.dAT_PHONG.create({
+      data: {
+        MaNguoiDung: userId,
+        NgayNhan: startDate,
+        NgayTra: endDate,
+        SoLuong: parsedGuests,
+        Gia: tongTien, // <--- Lưu giá do Backend tính
+        TrangThai: 'ChoXacNhan',
+        TrangThaiThanhToan: 'ChuaThanhToan',
+        CHI_TIET_DAT_PHONG: {
+          create: {
+            MaHomestay: homestayId,
+            SoLuongPhong: 1, 
+          },
         },
       },
-    },
-    include: {
-      CHI_TIET_DAT_PHONG: {
-        include: { HOMESTAY: true },
+      include: {
+        CHI_TIET_DAT_PHONG: {
+          include: { HOMESTAY: true },
+        },
+        NGUOI_DUNG: true,
       },
-      NGUOI_DUNG: true,
-    },
+    });
   });
 
   return newBooking;

@@ -72,6 +72,7 @@ function HomestayDetailPage() {
 
   // Auth state
   const token = localStorage.getItem('authToken')
+  const ownerToken = localStorage.getItem('ownerAuthToken')
   const userString = localStorage.getItem('authUser')
   
   const user = useMemo(() => {
@@ -96,7 +97,10 @@ function HomestayDetailPage() {
     const fetchHomestayDetail = async () => {
       try {
         setLoading(true)
-        const homestayRes = await axios.get(DETAIL_API_URL)
+        const config = ownerToken
+          ? { headers: { Authorization: `Bearer ${ownerToken}` } }
+          : undefined
+        const homestayRes = await axios.get(DETAIL_API_URL, config)
         const loadedHomestay = homestayRes.data.data
         setHomestay(loadedHomestay) 
         
@@ -148,7 +152,7 @@ function HomestayDetailPage() {
     fetchHomestayDetail()
     fetchFavorites()
     checkReviewEligibility()
-  }, [id, token, user, DETAIL_API_URL])
+  }, [id, token, ownerToken, user, DETAIL_API_URL])
 
   const fetchAvailability = async () => {
     if (id) {

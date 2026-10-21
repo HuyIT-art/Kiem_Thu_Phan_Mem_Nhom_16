@@ -14,6 +14,10 @@ export const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1]; // Tách lấy phần token
 
+      if (!token) {
+        return res.status(401).json({ message: 'Không tìm thấy token, yêu cầu bị từ chối.' });
+      }
+
       // 2. Giải mã token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -42,15 +46,15 @@ export const protect = async (req, res, next) => {
       req.user = currentUser;
 
       // Đi tiếp đến controller
-      next();
+      return next();
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
+      return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'Không tìm thấy token, yêu cầu bị từ chối.' });
+    return res.status(401).json({ message: 'Không tìm thấy token, yêu cầu bị từ chối.' });
   }
 };
 
@@ -62,6 +66,11 @@ export const protectAny = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ message: 'Không tìm thấy token, yêu cầu bị từ chối.' });
+      }
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       if (decoded.userId) {
@@ -106,4 +115,4 @@ export const protectAny = async (req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: 'Không tìm thấy token, yêu cầu bị từ chối.' });
   }
-};
+};

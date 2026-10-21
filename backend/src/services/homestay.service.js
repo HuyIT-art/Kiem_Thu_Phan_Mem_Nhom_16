@@ -69,7 +69,7 @@ export const getAllHomestays = async (queryParams) => {
 /**
  * Lấy một homestay bằng ID
  */
-export const getHomestayById = async (homestayId) => {
+export const getHomestayById = async (homestayId, requesterOwner = null) => {
   // Dùng 'findUnique' để tìm bản ghi duy nhất dựa vào 'MaHomestay'
   // 'hOMESTAY' là tên được Prisma tự động tạo
   const homestay = await prisma.hOMESTAY.findUnique({
@@ -108,8 +108,18 @@ export const getHomestayById = async (homestayId) => {
     // --- KẾT THÚC CẬP NHẬT ---
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay');
+  }
+
+  // Không cho phép khách vãng lai xem homestay chưa được duyệt (chỉ Chủ sở hữu hoặc Admin được xem trước)
+  if (homestay.TrangThaiDuyet !== 'DaDuyet') {
+    const isOwnerOrAdmin =
+      requesterOwner &&
+      (requesterOwner.Quyen === 'admin' || requesterOwner.MaChu === homestay.MaChu);
+    if (!isOwnerOrAdmin) {
+      throw new Error('Không tìm thấy homestay');
+    }
   }
 
   return homestay;
@@ -135,7 +145,7 @@ export const addFavorite = async (userId, homestayId) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestayExists) {
+  if (!homestayExists || homestayExists.isActive === false) {
     throw new Error('Không tìm thấy homestay');
   }
 
@@ -204,7 +214,7 @@ export const createReview = async (userId, homestayId, reviewData) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestayExists) {
+  if (!homestayExists || homestayExists.isActive === false) {
     throw new Error('Không tìm thấy homestay');
   }
 
@@ -307,8 +317,13 @@ export const bookHomestay = async (userId, homestayId, bookingData) => {
     throw new Error('Homestay hiện không nhận đặt phòng');
   }
 
-  // 2. Kiểm tra số lượng khách
-  if (soLuongKhach > homestay.SoKhachToiDa) {
+  // 2. Kiểm tra số lượng khách (Phải từ 1 đến SoKhachToiDa)
+  const parsedGuests = parseInt(soLuongKhach);
+  if (isNaN(parsedGuests) || parsedGuests < 1) {
+    throw new Error('Số lượng khách phải từ 1 người trở lên');
+  }
+
+  if (parsedGuests > homestay.SoKhachToiDa) {
     throw new Error('Số lượng khách vượt quá mức cho phép');
   }
 
@@ -318,6 +333,13 @@ export const bookHomestay = async (userId, homestayId, bookingData) => {
 
   if (isNaN(ngayNhanDate.getTime()) || isNaN(ngayTraDate.getTime())) {
     throw new Error('Ngày nhận hoặc ngày trả phòng không hợp lệ');
+  }
+
+  // Chặn đặt phòng với ngày nhận phòng trong quá khứ (tính từ 00:00 hôm nay)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  if (ngayNhanDate < todayStart) {
+    throw new Error('Ngày nhận phòng không được nằm trong quá khứ');
   }
 
   const soDem = (ngayTraDate - ngayNhanDate) / (1000 * 60 * 60 * 24);
@@ -359,7 +381,7 @@ export const bookHomestay = async (userId, homestayId, bookingData) => {
         MaNguoiDung: userId,
         NgayNhan: ngayNhanDate,
         NgayTra: ngayTraDate,
-        SoLuong: soLuongKhach,
+        SoLuong: parsedGuests,
         Gia: tongGia,
         TrangThai: 'ChoXacNhan',
         TrangThaiThanhToan: 'ChuaThanhToan',
@@ -402,6 +424,10 @@ export const createHomestay = async (homestayData, ownerId) => {
       MoTa: moTa,
       MaChu: ownerId, // <-- Liên kết với chủ homestay
     },
+    include: {
+      HINH_ANH: true,
+      DANH_GIA: true,
+    },
   });
 
   return newHomestay;
@@ -413,7 +439,7 @@ export const updateHomestay = async (homestayId, ownerId, updateData) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay'); // Lỗi 404
   }
 
@@ -422,7 +448,7 @@ export const updateHomestay = async (homestayId, ownerId, updateData) => {
     throw new Error('Không có quyền chỉnh sửa homestay này'); // Lỗi 403
   }
 
-  // 3. Cập nhật homestay
+  // 3. Cập nhật homestay kèm danh sách ảnh & đánh giá
   const updatedHomestay = await prisma.hOMESTAY.update({
     where: { MaHomestay: homestayId },
     data: {
@@ -433,6 +459,10 @@ export const updateHomestay = async (homestayId, ownerId, updateData) => {
       TienIch: updateData.tienIch,
       MoTa: updateData.moTa,
       // Chúng ta không cho phép cập nhật 'MaChu'
+    },
+    include: {
+      HINH_ANH: true,
+      DANH_GIA: true,
     },
   });
 
@@ -445,7 +475,7 @@ export const deleteHomestay = async (homestayId, ownerId) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay'); // Lỗi 404
   }
 
@@ -501,7 +531,7 @@ export const uploadImages = async (homestayId, ownerId, files) => {
     where: { MaHomestay: homestayId },
   });
 
-  if (!homestay) {
+  if (!homestay || homestay.isActive === false) {
     throw new Error('Không tìm thấy homestay');
   }
   if (homestay.MaChu !== ownerId) {
@@ -514,12 +544,10 @@ export const uploadImages = async (homestayId, ownerId, files) => {
   }
 
   // 3. Chuẩn bị dữ liệu để thêm vào bảng HINH_ANH
-  // 'files' là một mảng, 'file.path' là đường dẫn multer đã lưu
+  // Chuẩn hóa dấu gạch chéo '/' để đồng nhất trên Windows và Web URL
   const imageEntries = files.map((file) => ({
     MaHomestay: homestayId,
-    // Lưu đường dẫn (hoặc chỉ tên file) vào DB.
-    // 'file.path' sẽ là 'uploads/image-12345.png'
-    HinhAnh: file.path, 
+    HinhAnh: file.path.replace(/\\/g, '/'), 
   }));
 
   // 4. Thêm đồng loạt nhiều ảnh vào DB

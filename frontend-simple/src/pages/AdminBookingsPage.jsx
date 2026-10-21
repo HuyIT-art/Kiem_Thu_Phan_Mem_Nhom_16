@@ -42,7 +42,11 @@ export default function AdminBookingsPage() {
       );
       toast.success(`Đã cập nhật đơn #${bookingId} thành '${newStatus}'!`);
       setBookings((prev) =>
-        prev.map((b) => (b.MaDatPhong === bookingId ? response.data.data : b))
+        prev.map((b) =>
+          b.MaDatPhong === bookingId
+            ? { ...b, ...(response.data?.data || {}), TrangThai: newStatus }
+            : b
+        )
       );
     } catch (err) {
       console.error(err);
@@ -158,7 +162,7 @@ export default function AdminBookingsPage() {
                       </div>
                       {b.PhuongThucThanhToan && (
                         <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.2rem' }}>
-                          {b.PhuongThucThanhToan === 'QR_DEMO' ? 'QR Code' : 'Tiền mặt'}
+                          {b.PhuongThucThanhToan === 'ChuyenKhoanQR' || b.PhuongThucThanhToan === 'QR_DEMO' ? 'QR Code' : 'Tiền mặt'}
                         </div>
                       )}
                     </td>

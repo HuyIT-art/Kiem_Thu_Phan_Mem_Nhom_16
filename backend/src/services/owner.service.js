@@ -160,13 +160,14 @@ export const resetPassword = async (token, newPassword) => {
 };
 
 /**
- * Lấy danh sách homestay thuộc sở hữu của một chủ
+ * Lấy danh sách homestay thuộc sở hữu của một chủ (Chỉ lấy homestay đang hoạt động)
  * @param {number} ownerId - ID của chủ homestay (từ req.owner)
  */
 export const getMyHomestays = async (ownerId) => {
   const homestays = await prisma.hOMESTAY.findMany({
     where: {
       MaChu: ownerId,
+      isActive: true,
     },
     // Lấy kèm các thông tin liên quan
     include: {
@@ -284,14 +285,14 @@ export const getMyComplaints = async (ownerId) => {
 };
 export const getDashboardStats = async (ownerId) => {
   // 1. Lấy danh sách ID các homestay của chủ này
-  const myHomestayIds = await prisma.hOMESTAY.findMany({
+  const myHomestays = await prisma.hOMESTAY.findMany({
     where: { MaChu: ownerId },
-    select: { MaHomestay: true },
+    select: { MaHomestay: true, isActive: true },
   });
-  const homestayIdList = myHomestayIds.map((h) => h.MaHomestay);
+  const homestayIdList = myHomestays.map((h) => h.MaHomestay);
 
-  // 2. Đếm tổng số homestay
-  const totalHomestays = homestayIdList.length;
+  // 2. Đếm tổng số homestay đang hoạt động
+  const totalHomestays = myHomestays.filter((h) => h.isActive !== false).length;
 
   // 3. Lấy tất cả các đơn đặt phòng liên quan
   const allBookings = await prisma.dAT_PHONG.findMany({
@@ -304,6 +305,7 @@ export const getDashboardStats = async (ownerId) => {
     },
     select: {
       TrangThai: true,
+      TrangThaiThanhToan: true,
       Gia: true, // Tổng giá của đơn đặt
     },
   });
@@ -333,7 +335,11 @@ export const getDashboardStats = async (ownerId) => {
   let cancelledBookings = 0;
 
   allBookings.forEach((booking) => {
-    if (booking.TrangThai === 'DaXacNhan' || booking.TrangThai === 'DangLuuTru' || booking.TrangThai === 'DaHoanThanh') {
+    // Chỉ tính doanh thu thực tế đối với đơn không bị hủy và đã thanh toán (hoặc đã hoàn thành lưu trú)
+    if (
+      booking.TrangThai !== 'DaHuy' &&
+      (booking.TrangThaiThanhToan === 'DaThanhToan' || booking.TrangThai === 'DaHoanThanh')
+    ) {
       totalRevenue += parseFloat(booking.Gia || 0);
     }
     if (booking.TrangThai === 'DaXacNhan') {
@@ -459,4 +465,4 @@ export const updateOwnerProfile = async (ownerId, profileData) => {
   });
 
   return updatedOwner;
-};
+};
