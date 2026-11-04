@@ -12,6 +12,8 @@ import ownerRoute from './routes/owner.route.js';
 import authRoute from './routes/auth.route.js'; 
 import bookingRoute from './routes/booking.route.js';
 import complaintRoute from './routes/complaint.route.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger.js';
 
 // --- Cấu hình đường dẫn cho ES Modules ---
 // Cần 2 dòng này để lấy __dirname (đường dẫn thư mục hiện tại)
@@ -33,6 +35,10 @@ app.use(express.json());
 // Bất cứ request nào đến /uploads, Express sẽ tìm file trong thư mục 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/admin', adminRoute);
+
+// Swagger UI: http://localhost:PORT/api-docs (JSON: /api-docs.json)
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.get('/', (req, res) => {
