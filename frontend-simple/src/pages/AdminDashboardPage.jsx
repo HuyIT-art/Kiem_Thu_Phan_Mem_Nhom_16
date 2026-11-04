@@ -46,6 +46,8 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, [token]);
 
+  const revenue = `${Number(stats?.totalRevenue || 0).toLocaleString('vi-VN')} đ`;
+
   return (
     <AdminLayout
       title="Bảng Điều Khiển Quản Trị"
@@ -65,19 +67,19 @@ export default function AdminDashboardPage() {
         <>
           {/* Key Stat Cards Grid */}
           <div className="stats-cards-grid">
-            <div className="stat-widget">
+            <Link to="/admin/transactions" className="stat-widget stat-widget-revenue stat-widget-link">
               <div className="stat-widget-icon green">
                 <TrendingUp size={24} />
               </div>
               <div className="stat-widget-content">
                 <span className="stat-widget-label">Tổng doanh thu hệ thống</span>
-                <span className="stat-widget-value" style={{ color: '#15803D' }}>
-                  {stats.totalRevenue ? stats.totalRevenue.toLocaleString('vi-VN') : 0} đ
+                <span className="stat-widget-value" title={revenue} style={{ color: '#15803D', '--revenue-length': revenue.length }}>
+                  {revenue}
                 </span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/users" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon blue">
                 <Users size={24} />
               </div>
@@ -85,9 +87,9 @@ export default function AdminDashboardPage() {
                 <span className="stat-widget-label">Khách hàng đăng ký</span>
                 <span className="stat-widget-value">{stats.totalUsers || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/owners" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon amber">
                 <Building2 size={24} />
               </div>
@@ -95,9 +97,9 @@ export default function AdminDashboardPage() {
                 <span className="stat-widget-label">Chủ homestay đối tác</span>
                 <span className="stat-widget-value">{stats.totalOwners || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/homestays" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon purple">
                 <Home size={24} />
               </div>
@@ -105,12 +107,12 @@ export default function AdminDashboardPage() {
                 <span className="stat-widget-label">Tổng số Homestay</span>
                 <span className="stat-widget-value">{stats.totalHomestays || 0}</span>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Operational Secondary Stat Cards */}
           <div className="stats-cards-grid" style={{ marginBottom: '2.5rem' }}>
-            <div className="stat-widget">
+            <Link to="/admin/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon blue">
                 <CalendarCheck size={24} />
               </div>
@@ -118,9 +120,9 @@ export default function AdminDashboardPage() {
                 <span className="stat-widget-label">Tổng đơn đặt phòng</span>
                 <span className="stat-widget-value">{stats.totalBookings || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/homestays" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon amber">
                 <Clock size={24} />
               </div>
@@ -130,9 +132,9 @@ export default function AdminDashboardPage() {
                   {stats.pendingHomestays || 0}
                 </span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/transactions" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon green">
                 <CreditCard size={24} />
               </div>
@@ -140,9 +142,9 @@ export default function AdminDashboardPage() {
                 <span className="stat-widget-label">Giao dịch thành công</span>
                 <span className="stat-widget-value">{stats.successfulTransactions || 0} / {stats.totalTransactions || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/admin/complaints" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon rose">
                 <AlertTriangle size={24} />
               </div>
@@ -152,7 +154,7 @@ export default function AdminDashboardPage() {
                   {stats.pendingComplaints || 0}
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Tables Preview Grid */}

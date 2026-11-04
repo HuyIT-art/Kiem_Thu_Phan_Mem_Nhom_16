@@ -1,7 +1,7 @@
 // src/pages/LoginPage.jsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import axios from 'axios'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import './Form.css' // Dùng chung file CSS từ hôm qua
 import { toast } from 'react-hot-toast';
 
@@ -13,13 +13,6 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (localStorage.getItem('authToken')) {
-      navigate('/')
-    }
-  }, [navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -34,17 +27,20 @@ function LoginPage() {
       })
 
       // 2. Lấy token và user từ kết quả
-      const { token, user } = response.data.data
+      const { token, user, owner, role } = response.data.data
 
       // 3. (QUAN TRỌNG) Lưu vào localStorage
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('authUser', JSON.stringify(user)) // Lưu user dưới dạng chuỗi JSON
+      for (const key of ['authToken', 'authUser', 'ownerAuthToken', 'ownerAuthUser']) {
+        localStorage.removeItem(key)
+      }
+      localStorage.setItem(user ? 'authToken' : 'ownerAuthToken', token)
+      localStorage.setItem(user ? 'authUser' : 'ownerAuthUser', JSON.stringify(user || owner))
 
       toast.success('Đăng nhập thành công! Đang chuyển hướng...')
 
       // 4. Chuyển hướng về trang chủ và nạp lại để header cập nhật
       setTimeout(() => {
-        window.location.href = '/'
+        window.location.href = user ? '/' : role === 'admin' ? '/admin/dashboard' : '/owner/dashboard'
       }, 400)
 
     } catch (err) {
@@ -60,6 +56,7 @@ function LoginPage() {
     <div className="form-container">
       <form className="auth-form" onSubmit={handleSubmit}>
         <h2>Đăng Nhập</h2>
+        <p>Dành cho khách hàng, chủ homestay và quản trị viên.</p>
         {error && <p className="error-message">{error}</p>}
 
         <div className="form-group">

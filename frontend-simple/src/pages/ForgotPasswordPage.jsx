@@ -20,7 +20,7 @@ function ForgotPasswordPage() {
 
     try {
       // 1. Gọi API yêu cầu token
-      const response = await axios.post(API_URL, { email })
+      const response = await axios.post(API_URL, { email: email.trim().toLowerCase() })
       
       // 2. Lấy token (giả lập) từ backend
       const { resetToken } = response.data
@@ -43,7 +43,7 @@ function ForgotPasswordPage() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <h2>Quên Mật khẩu</h2>
         <p style={{textAlign: 'center', color: '#555', marginTop: 0}}>
-          Nhập email của bạn để nhận token đặt lại mật khẩu.
+          Nhập email tài khoản khách hàng, chủ homestay hoặc quản trị viên để đặt lại mật khẩu.
         </p>
         {error && <p className="error-message">{error}</p>}
         

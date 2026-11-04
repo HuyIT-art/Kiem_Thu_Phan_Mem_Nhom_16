@@ -649,7 +649,7 @@ function HomePage() {
           <div className="footer-links-col">
             <h4>Kênh Chủ Homestay</h4>
             <ul>
-              <li><Link to="/owner/login">Đăng nhập Kênh Chủ Nhà</Link></li>
+              <li><Link to="/login">Đăng nhập Kênh Chủ Nhà</Link></li>
               <li><Link to="/owner/register">Đăng ký tham gia hệ thống</Link></li>
               <li><a href="#destinations">Quy chuẩn dịch vụ & Tiện nghi</a></li>
               <li><a href="#destinations">Cam kết an toàn & Bảo hiểm</a></li>

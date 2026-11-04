@@ -44,7 +44,7 @@ export default function OwnerHomestaysPage() {
   useEffect(() => {
     if (!token) {
       toast.error('Bạn cần đăng nhập kênh Chủ nhà.');
-      navigate('/owner/login');
+      navigate('/login');
       return;
     }
     fetchMyHomestays();

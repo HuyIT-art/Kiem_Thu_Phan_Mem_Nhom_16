@@ -15,7 +15,7 @@ export function ProtectedRoute({ children, role = 'user' }) {
 
     if (!token || !owner || owner.Quyen !== 'admin') {
       toast.error('Bạn không có quyền truy cập trang Quản trị viên (Admin).');
-      return <Navigate to="/admin/login" replace />;
+      return <Navigate to="/login" replace />;
     }
   } else if (role === 'owner') {
     const token = localStorage.getItem('ownerAuthToken');
@@ -23,7 +23,7 @@ export function ProtectedRoute({ children, role = 'user' }) {
 
     if (!token || !ownerStr) {
       toast.error('Vui lòng đăng nhập kênh Chủ nhà để tiếp tục.');
-      return <Navigate to="/owner/login" replace />;
+      return <Navigate to="/login" replace />;
     }
   } else if (role === 'user') {
     const token = localStorage.getItem('authToken');

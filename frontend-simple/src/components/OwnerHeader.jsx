@@ -17,7 +17,7 @@ function OwnerHeader() {
     localStorage.removeItem('ownerAuthToken');
     localStorage.removeItem('ownerAuthUser');
     toast.success('Đăng xuất thành công!');
-    navigate('/owner/login');
+    navigate('/login');
   };
 
   return (
@@ -78,7 +78,7 @@ function OwnerHeader() {
         ) : (
           // --- Khi chưa đăng nhập ---
           <div className="auth-links">
-            <Link to="/owner/login">Đăng nhập</Link>
+            <Link to="/login">Đăng nhập</Link>
             <Link to="/owner/register">Đăng ký</Link>
           </div>
         )}

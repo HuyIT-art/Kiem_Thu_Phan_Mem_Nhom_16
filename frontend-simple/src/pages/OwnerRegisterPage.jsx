@@ -41,7 +41,7 @@ function OwnerRegisterPage() {
       })
       
       toast.success('Đăng ký tài khoản chủ nhà thành công! Vui lòng đăng nhập.')
-      navigate('/owner/login') // Chuyển đến trang đăng nhập CỦA CHỦ NHÀ
+      navigate('/login') // Chuyển đến trang đăng nhập CỦA CHỦ NHÀ
       
     } catch (err) {
       const message = err.response?.data?.message || 'Đăng ký thất bại.'
@@ -136,7 +136,7 @@ function OwnerRegisterPage() {
         </button>
 
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
-          Đã có tài khoản? <Link to="/owner/login">Đăng nhập</Link>
+          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
         </p>
       </form>
     </div>

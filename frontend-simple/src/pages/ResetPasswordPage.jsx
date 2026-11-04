@@ -1,7 +1,7 @@
 // src/pages/ResetPasswordPage.jsx
 import { useState } from 'react'
 import axios from 'axios'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast';
 import './Form.css'
 

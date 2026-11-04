@@ -303,9 +303,9 @@ Terminal sẽ hiển thị đường link truy cập cục bộ:
 | **Chi tiết Homestay** | `http://localhost:5173/homestay/:id` | Xem chi tiết tiện nghi, lịch trống, chọn ngày đặt phòng |
 | **Đặt phòng & Thanh toán**| `http://localhost:5173/booking/:id` | Nhập thông tin, tạo đơn và thanh toán QR demo |
 | **Lịch sử đơn của tôi** | `http://localhost:5173/my-bookings` | Quản lý lịch sử, hủy đơn, tải biên lai thanh toán |
-| **Cổng Chủ homestay** | `http://localhost:5173/owner/login` | Đăng nhập cổng quản trị của Chủ nhà |
+| **Cổng Chủ homestay** | `http://localhost:5173/login` | Đăng nhập cổng quản trị của Chủ nhà |
 | **Dashboard Chủ homestay**| `http://localhost:5173/owner/dashboard` | Quản lý homestay, đơn đặt phòng, doanh thu |
-| **Cổng Quản trị viên (Admin)**| `http://localhost:5173/admin/login` | Đăng nhập cổng Quản trị hệ thống |
+| **Cổng Quản trị viên (Admin)**| `http://localhost:5173/login` | Đăng nhập cổng Quản trị hệ thống |
 | **Dashboard Admin** | `http://localhost:5173/admin/dashboard` | Thống kê, duyệt homestay, quản lý người dùng |
 | **Backend REST API** | `http://localhost:3000/api` | API Base URL |
 
@@ -317,8 +317,8 @@ Sau khi chạy lệnh `npx prisma db seed`, hệ thống đã sẵn sàng các t
 
 | Vai trò (Role) | Email đăng nhập | Mật khẩu mặc định | Cổng đăng nhập | Quyền hạn chính |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** (Quản trị viên) | `admin@test.com` | `password123` | `http://localhost:5173/admin/login` | Toàn quyền kiểm duyệt homestay, khóa/mở người dùng, xem báo cáo thống kê |
-| **Chủ homestay** (Host) | `seed.owner@test.com` | `password123` | `http://localhost:5173/owner/login` | Quản lý 24 homestay mẫu, xác nhận đơn đặt phòng, theo dõi lịch phòng trống và doanh thu |
+| **Admin** (Quản trị viên) | `admin@test.com` | `password123` | `http://localhost:5173/login` | Toàn quyền kiểm duyệt homestay, khóa/mở người dùng, xem báo cáo thống kê |
+| **Chủ homestay** (Host) | `seed.owner@test.com` | `password123` | `http://localhost:5173/login` | Quản lý 24 homestay mẫu, xác nhận đơn đặt phòng, theo dõi lịch phòng trống và doanh thu |
 | **Khách hàng** (Customer) | `customer@test.com` | `password123` | `http://localhost:5173/login` | Xem danh sách homestay, đặt phòng, thanh toán QR demo, đánh giá dịch vụ |
 
 ---
@@ -338,7 +338,7 @@ Sau khi chạy lệnh `npx prisma db seed`, hệ thống đã sẵn sàng các t
 5. **Theo dõi đơn:** Vào mục **Đặt phòng của tôi** (`/my-bookings`) để xem trạng thái đơn, hóa đơn chi tiết, hoặc thực hiện hủy phòng nếu chưa đến ngày.
 
 ### 11.2 Luồng Chủ homestay (Host Operations)
-1. **Đăng nhập:** Truy cập `/owner/login` bằng tài khoản chủ homestay.
+1. **Đăng nhập:** Truy cập `/login` bằng tài khoản chủ homestay.
 2. **Quản lý danh sách Homestay:** Thêm mới homestay, tải lên hình ảnh, chỉnh sửa giá phòng, tiện ích và sức chứa.
 3. **Xử lý đơn đặt phòng:**
    - Nhận thông báo đơn mới ở trạng thái `ChoXacNhan`.
@@ -348,7 +348,7 @@ Sau khi chạy lệnh `npx prisma db seed`, hệ thống đã sẵn sàng các t
 5. **Thống kê doanh thu:** Biểu đồ doanh thu thực tế theo từng tháng, tổng số lượt đặt thành công.
 
 ### 11.3 Luồng Quản trị viên (Admin Management)
-1. **Đăng nhập:** Truy cập `/admin/login` bằng tài khoản Quản trị viên.
+1. **Đăng nhập:** Truy cập `/login` bằng tài khoản Quản trị viên.
 2. **Kiểm duyệt Homestay:** Duyệt (`DaDuyet`) hoặc từ chối (`TuChoi`) các homestay mới đăng ký từ các chủ nhà trước khi được công khai lên trang chủ.
 3. **Quản lý người dùng:** Xem danh sách toàn bộ khách hàng và chủ homestay, khóa tài khoản vi phạm hoặc kích hoạt lại.
 4. **Xử lý khiếu nại:** Tiếp nhận khiếu nại từ khách hàng về chất lượng phòng hoặc thái độ phục vụ, phản hồi giải quyết khiếu nại.

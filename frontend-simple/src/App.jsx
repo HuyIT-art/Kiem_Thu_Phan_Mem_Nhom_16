@@ -16,10 +16,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import MyComplaintsPage from './pages/MyComplaintsPage';
 
 // Owner & Admin Auth Pages
-import OwnerLoginPage from './pages/OwnerLoginPage';
 import OwnerRegisterPage from './pages/OwnerRegisterPage';
-import OwnerForgotPasswordPage from './pages/OwnerForgotPasswordPage';
-import OwnerResetPasswordPage from './pages/OwnerResetPasswordPage';
 
 // Owner Protected Pages
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
@@ -93,13 +90,13 @@ function App() {
 
         {/* --- Owner & Admin Auth Routes (Public) --- */}
         <Route path="/owner" element={<Navigate to="/owner/dashboard" replace />} />
-        <Route path="/owner/login" element={<OwnerLoginPage />} />
+        <Route path="/owner/login" element={<Navigate to="/login" replace />} />
         <Route path="/owner/register" element={<OwnerRegisterPage />} />
-        <Route path="/owner/forgot-password" element={<OwnerForgotPasswordPage />} />
-        <Route path="/owner/reset-password/:token" element={<OwnerResetPasswordPage />} />
+        <Route path="/owner/forgot-password" element={<Navigate to="/forgot-password" replace />} />
+        <Route path="/owner/reset-password/:token" element={<ResetPasswordPage />} />
 
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/login" element={<OwnerLoginPage />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
 
         {/* --- Owner Protected Routes --- */}
         <Route

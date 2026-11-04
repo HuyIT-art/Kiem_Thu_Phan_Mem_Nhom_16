@@ -100,7 +100,7 @@ export const getMyBookings = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const resetToken = await userService.requestPasswordReset(email);
+    const resetToken = await authService.requestPasswordReset(email);
 
     // Mô phỏng: Trả token về. Trong đời thực: gửi email.
     res.status(200).json({
@@ -122,7 +122,7 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    await userService.resetPassword(token, newPassword);
+    await authService.resetPassword(token, newPassword);
 
     res.status(200).json({ message: 'Đổi mật khẩu thành công!' });
   } catch (error) {

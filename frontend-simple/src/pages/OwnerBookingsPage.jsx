@@ -36,7 +36,7 @@ export default function OwnerBookingsPage() {
   useEffect(() => {
     if (!token) {
       toast.error('Bạn cần đăng nhập với tư cách Chủ Homestay.');
-      navigate('/owner/login');
+      navigate('/login');
       return;
     }
     fetchBookings();

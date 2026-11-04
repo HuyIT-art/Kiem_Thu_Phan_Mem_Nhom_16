@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, X, Trees, User, Calendar, MessageSquareWarning, 
-  Heart, LogOut, Compass, Sparkles, Building2, ChevronDown 
+  Heart, LogOut, Compass, Sparkles, ChevronDown
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -98,12 +98,6 @@ function Header() {
 
         {/* Right Actions */}
         <div className="header-actions">
-          {/* Owner Portal Link */}
-          <Link to="/owner/login" className="owner-portal-btn" title="Kênh dành cho chủ nhà">
-            <Building2 size={16} />
-            <span>Kênh Chủ Nhà</span>
-          </Link>
-
           {user ? (
             /* Logged in User Menu */
             <div className="user-profile-wrapper">
@@ -200,9 +194,6 @@ function Header() {
             <a href="/#featured" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
               Homestay nổi bật
             </a>
-            <Link to="/owner/login" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-              Kênh Chủ Nhà
-            </Link>
 
             {user ? (
               <div className="mobile-user-section">

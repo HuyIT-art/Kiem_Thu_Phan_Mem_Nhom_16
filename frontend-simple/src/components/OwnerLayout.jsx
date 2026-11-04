@@ -35,7 +35,7 @@ export default function OwnerLayout({ title, subtitle, actions, children }) {
     localStorage.removeItem('ownerAuthToken');
     localStorage.removeItem('ownerAuthUser');
     toast.success('Đã đăng xuất khỏi Kênh Chủ nhà');
-    navigate('/owner/login');
+    navigate('/login');
   };
 
   const navItems = [

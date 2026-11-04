@@ -43,6 +43,8 @@ export default function OwnerDashboardPage() {
     fetchStats();
   }, [token]);
 
+  const revenue = `${Number(stats?.totalRevenue || 0).toLocaleString('vi-VN')} đ`;
+
   return (
     <OwnerLayout
       title="Bảng Điều Khiển Chủ Homestay"
@@ -71,19 +73,19 @@ export default function OwnerDashboardPage() {
         <>
           {/* Main Key Metrics */}
           <div className="stats-cards-grid">
-            <div className="stat-widget">
+            <Link to="/owner/transactions" className="stat-widget stat-widget-revenue stat-widget-link">
               <div className="stat-widget-icon green">
                 <TrendingUp size={24} />
               </div>
               <div className="stat-widget-content">
                 <span className="stat-widget-label">Doanh thu tích lũy</span>
-                <span className="stat-widget-value" style={{ color: '#15803D' }}>
-                  {stats.totalRevenue ? stats.totalRevenue.toLocaleString('vi-VN') : 0} đ
+                <span className="stat-widget-value" title={revenue} style={{ color: '#15803D', '--revenue-length': revenue.length }}>
+                  {revenue}
                 </span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/homestays" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon amber">
                 <Home size={24} />
               </div>
@@ -91,9 +93,9 @@ export default function OwnerDashboardPage() {
                 <span className="stat-widget-label">Homestay sở hữu</span>
                 <span className="stat-widget-value">{stats.totalHomestays || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon blue">
                 <CalendarCheck size={24} />
               </div>
@@ -101,9 +103,9 @@ export default function OwnerDashboardPage() {
                 <span className="stat-widget-label">Tổng đơn đã nhận</span>
                 <span className="stat-widget-value">{stats.totalBookings || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon purple">
                 <Clock size={24} />
               </div>
@@ -113,12 +115,12 @@ export default function OwnerDashboardPage() {
                   {stats.pendingBookings || 0}
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Booking States Breakdown */}
           <div className="stats-cards-grid" style={{ marginBottom: '2rem' }}>
-            <div className="stat-widget">
+            <Link to="/owner/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon blue">
                 <CalendarCheck size={24} />
               </div>
@@ -126,9 +128,9 @@ export default function OwnerDashboardPage() {
                 <span className="stat-widget-label">Đã xác nhận đón khách</span>
                 <span className="stat-widget-value">{stats.confirmedBookings || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon amber">
                 <Home size={24} />
               </div>
@@ -136,9 +138,9 @@ export default function OwnerDashboardPage() {
                 <span className="stat-widget-label">Khách đang lưu trú</span>
                 <span className="stat-widget-value">{stats.stayingBookings || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/bookings" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon green">
                 <CheckCircle2 size={24} />
               </div>
@@ -146,9 +148,9 @@ export default function OwnerDashboardPage() {
                 <span className="stat-widget-label">Kỳ nghỉ đã hoàn thành</span>
                 <span className="stat-widget-value">{stats.completedBookings || 0}</span>
               </div>
-            </div>
+            </Link>
 
-            <div className="stat-widget">
+            <Link to="/owner/complaints" className="stat-widget stat-widget-link">
               <div className="stat-widget-icon rose">
                 <AlertTriangle size={24} />
               </div>
@@ -158,7 +160,7 @@ export default function OwnerDashboardPage() {
                   {stats.pendingComplaints || 0}
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Quick Access Cards */}

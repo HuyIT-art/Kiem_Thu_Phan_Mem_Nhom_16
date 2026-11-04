@@ -404,7 +404,9 @@ export const getDashboardStats = async () => {
     })
   ]);
 
-  let totalRevenue = 0;
+  const totalRevenue = allTransactions
+    .filter((transaction) => transaction.TrangThai === 'ThanhCong')
+    .reduce((total, transaction) => total + Number(transaction.SoTien || 0), 0);
   let confirmedBookings = 0;
   let pendingBookings = 0;
   let stayingBookings = 0;
@@ -412,13 +414,6 @@ export const getDashboardStats = async () => {
   let cancelledBookings = 0;
 
   allBookings.forEach((b) => {
-    // Chỉ cộng doanh thu thực tế đối với đơn không bị hủy và đã thanh toán (hoặc đã hoàn thành lưu trú)
-    if (
-      b.TrangThai !== 'DaHuy' &&
-      (b.TrangThaiThanhToan === 'DaThanhToan' || b.TrangThai === 'DaHoanThanh')
-    ) {
-      totalRevenue += parseFloat(b.Gia || 0);
-    }
     if (b.TrangThai === 'DaXacNhan') confirmedBookings++;
     else if (b.TrangThai === 'ChoXacNhan') pendingBookings++;
     else if (b.TrangThai === 'DangLuuTru') stayingBookings++;
@@ -486,7 +481,13 @@ export const getAllTransactions = async () => {
           NGUOI_DUNG: { select: { HoTen: true, Email: true, SoDienThoai: true } },
           CHI_TIET_DAT_PHONG: {
             include: {
-              HOMESTAY: { select: { MaHomestay: true, TenHomestay: true } }
+              HOMESTAY: {
+                select: {
+                  MaHomestay: true,
+                  TenHomestay: true,
+                  CHU_HOMESTAY: { select: { MaChu: true, HoTen: true, Email: true } }
+                }
+              }
             }
           }
         }

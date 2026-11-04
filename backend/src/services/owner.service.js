@@ -327,7 +327,11 @@ export const getDashboardStats = async (ownerId) => {
   });
 
   // 5. Tính toán các số liệu
-  let totalRevenue = 0;
+  // Dùng cùng phạm vi giao dịch và cách tính với trang lịch sử giao dịch.
+  const transactions = await getMyTransactions(ownerId);
+  const totalRevenue = transactions
+    .filter((transaction) => transaction.TrangThai === 'ThanhCong')
+    .reduce((total, transaction) => total + Number(transaction.SoTien || 0), 0);
   let confirmedBookings = 0;
   let pendingBookings = 0;
   let stayingBookings = 0;
@@ -335,13 +339,6 @@ export const getDashboardStats = async (ownerId) => {
   let cancelledBookings = 0;
 
   allBookings.forEach((booking) => {
-    // Chỉ tính doanh thu thực tế đối với đơn không bị hủy và đã thanh toán (hoặc đã hoàn thành lưu trú)
-    if (
-      booking.TrangThai !== 'DaHuy' &&
-      (booking.TrangThaiThanhToan === 'DaThanhToan' || booking.TrangThai === 'DaHoanThanh')
-    ) {
-      totalRevenue += parseFloat(booking.Gia || 0);
-    }
     if (booking.TrangThai === 'DaXacNhan') {
       confirmedBookings += 1;
     } else if (booking.TrangThai === 'ChoXacNhan') {
