@@ -16,6 +16,7 @@ function Header() {
 
   const userString = localStorage.getItem('authUser');
   const user = userString ? JSON.parse(userString) : null;
+  const authRole = localStorage.getItem('authRole') || user?.Quyen || 'customer';
 
   // Track scroll for sticky glass effect
   useEffect(() => {
@@ -39,9 +40,12 @@ function Header() {
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
+    localStorage.removeItem('ownerAuthToken');
+    localStorage.removeItem('ownerAuthUser');
+    localStorage.removeItem('authRole');
     toast.success('Đã đăng xuất thành công.');
     setTimeout(() => {
-      window.location.href = '/';
+      window.location.href = '/login';
     }, 300);
   };
 
@@ -98,11 +102,20 @@ function Header() {
 
         {/* Right Actions */}
         <div className="header-actions">
-          {/* Owner Portal Link */}
-          <Link to="/owner/login" className="owner-portal-btn" title="Kênh dành cho chủ nhà">
-            <Building2 size={16} />
-            <span>Kênh Chủ Nhà</span>
-          </Link>
+          {/* Quick link to Management Portals if logged in as Admin or Host */}
+          {user && authRole === 'admin' && (
+            <Link to="/admin/dashboard" className="owner-portal-btn" title="Kênh Quản Trị Viên">
+              <Building2 size={16} />
+              <span>Quản Trị Viên</span>
+            </Link>
+          )}
+
+          {user && authRole === 'chu_homestay' && (
+            <Link to="/owner/dashboard" className="owner-portal-btn" title="Kênh Chủ Homestay">
+              <Building2 size={16} />
+              <span>Kênh Chủ Nhà</span>
+            </Link>
+          )}
 
           {user ? (
             /* Logged in User Menu */
@@ -137,22 +150,36 @@ function Header() {
 
                     <div className="dropdown-divider" />
 
-                    <Link to="/profile" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
-                      <User size={18} />
-                      <span>Thông tin tài khoản</span>
-                    </Link>
-                    <Link to="/my-bookings" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
-                      <Calendar size={18} />
-                      <span>Lịch sử đặt phòng</span>
-                    </Link>
-                    <Link to="/my-favorites" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
-                      <Heart size={18} />
-                      <span>Danh sách yêu thích</span>
-                    </Link>
-                    <Link to="/my-complaints" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
-                      <MessageSquareWarning size={18} />
-                      <span>Lịch sử khiếu nại</span>
-                    </Link>
+                    {authRole === 'admin' ? (
+                      <Link to="/admin/dashboard" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                        <Building2 size={18} />
+                        <span>Trang quản trị (Admin)</span>
+                      </Link>
+                    ) : authRole === 'chu_homestay' ? (
+                      <Link to="/owner/dashboard" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                        <Building2 size={18} />
+                        <span>Kênh quản lý Homestay</span>
+                      </Link>
+                    ) : (
+                      <>
+                        <Link to="/profile" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                          <User size={18} />
+                          <span>Thông tin tài khoản</span>
+                        </Link>
+                        <Link to="/my-bookings" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                          <Calendar size={18} />
+                          <span>Lịch sử đặt phòng</span>
+                        </Link>
+                        <Link to="/my-favorites" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                          <Heart size={18} />
+                          <span>Danh sách yêu thích</span>
+                        </Link>
+                        <Link to="/my-complaints" className="dropdown-link" onClick={() => setIsMenuOpen(false)}>
+                          <MessageSquareWarning size={18} />
+                          <span>Lịch sử khiếu nại</span>
+                        </Link>
+                      </>
+                    )}
 
                     <div className="dropdown-divider" />
 
@@ -200,9 +227,18 @@ function Header() {
             <a href="/#featured" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
               Homestay nổi bật
             </a>
-            <Link to="/owner/login" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-              Kênh Chủ Nhà
-            </Link>
+            
+            {user && authRole === 'admin' && (
+              <Link to="/admin/dashboard" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                Quản Trị Viên
+              </Link>
+            )}
+
+            {user && authRole === 'chu_homestay' && (
+              <Link to="/owner/dashboard" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                Kênh Chủ Nhà
+              </Link>
+            )}
 
             {user ? (
               <div className="mobile-user-section">
@@ -213,29 +249,42 @@ function Header() {
                     <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>{user.Email}</div>
                   </div>
                 </div>
-                <Link to="/profile" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-                  Thông tin cá nhân
-                </Link>
-                <Link to="/my-bookings" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-                  Lịch sử đặt phòng
-                </Link>
-                <Link to="/my-favorites" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-                  Danh sách yêu thích
-                </Link>
-                <Link to="/my-complaints" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
-                  Khiếu nại
-                </Link>
-                <button onClick={handleLogout} className="mobile-link mobile-logout-btn">
+                {authRole === 'admin' ? (
+                  <Link to="/admin/dashboard" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                    Trang Quản Trị Viên
+                  </Link>
+                ) : authRole === 'chu_homestay' ? (
+                  <Link to="/owner/dashboard" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                    Dashboard Chủ Homestay
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/profile" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                      Thông tin cá nhân
+                    </Link>
+                    <Link to="/my-bookings" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                      Lịch sử đặt phòng
+                    </Link>
+                    <Link to="/my-favorites" className="mobile-link" onClick={() => setIsMobileNavOpen(false)}>
+                      Danh sách yêu thích
+                    </Link>
+                  </>
+                )}
+                <button 
+                  onClick={handleLogout} 
+                  className="mobile-link" 
+                  style={{ color: '#DC2626', background: 'none', border: 'none', textAlign: 'left', width: '100%', cursor: 'pointer', padding: '0.75rem 1rem' }}
+                >
                   Đăng xuất
                 </button>
               </div>
             ) : (
-              <div className="mobile-auth-actions">
-                <Link to="/login" className="btn-login-ghost" onClick={() => setIsMobileNavOpen(false)}>
+              <div className="mobile-guest-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                <Link to="/login" className="btn-login-ghost" onClick={() => setIsMobileNavOpen(false)} style={{ textAlign: 'center' }}>
                   Đăng nhập
                 </Link>
-                <Link to="/register" className="btn-register-solid" onClick={() => setIsMobileNavOpen(false)}>
-                  Đăng ký tài khoản
+                <Link to="/register" className="btn-register-solid" onClick={() => setIsMobileNavOpen(false)} style={{ textAlign: 'center' }}>
+                  Đăng ký
                 </Link>
               </div>
             )}

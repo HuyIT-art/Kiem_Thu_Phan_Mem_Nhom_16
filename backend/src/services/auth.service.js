@@ -33,36 +33,94 @@ export const registerUser = async (userData) => {
   return user;
 };
 
-// Thêm hàm loginUser
+/**
+ * Đăng nhập một cổng duy nhất cho tất cả các vai trò: Customer, Host, Admin
+ * Tự động nhận diện vai trò từ cơ sở dữ liệu dựa trên email và mật khẩu
+ */
 export const loginUser = async (userData) => {
-  const normalizedEmail = userData.email?.trim().toLowerCase();
-  // 1. Tìm người dùng bằng email
-  const user = await prisma.nGUOI_DUNG.findUnique({
+  const normalizedEmail = (userData.email || '').trim().toLowerCase();
+  const rawPassword = userData.password || userData.matKhau;
+
+  if (!normalizedEmail || !rawPassword) {
+    throw new Error('Vui lòng cung cấp đầy đủ email và mật khẩu');
+  }
+
+  // 1. Kiểm tra trong bảng CHU_HOMESTAY (bao gồm Chủ Homestay và Quản trị viên Admin)
+  const owner = await prisma.cHU_HOMESTAY.findUnique({
     where: { Email: normalizedEmail },
   });
 
-  if (!user) {
-    throw new Error('Email không tồn tại');
-  }
-  if (user.isActive === false) {
-    throw new Error('Tài khoản của bạn đã bị khóa'); // Lỗi mới
-  }
-  // 2. So sánh mật khẩu
-  const isPasswordMatch = await bcrypt.compare(userData.password, user.MatKhau);
+  if (owner) {
+    if (owner.isActive === false) {
+      throw new Error('Tài khoản của bạn đã bị khóa');
+    }
 
-  if (!isPasswordMatch) {
-    throw new Error('Mật khẩu không chính xác');
+    const isPasswordMatch = await bcrypt.compare(rawPassword, owner.MatKhau);
+    if (!isPasswordMatch) {
+      throw new Error('Mật khẩu không chính xác');
+    }
+
+    const role = owner.Quyen === 'admin' ? 'admin' : 'chu_homestay';
+
+    // Tạo Token (JWT) cho Chủ nhà / Admin
+    // Chứa ownerId tương thích tuyệt đối với middleware protectOwner, protectAdmin, protectAny
+    const token = jwt.sign(
+      {
+        ownerId: owner.MaChu,
+        role: role,
+        email: owner.Email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '5h' }
+    );
+
+    delete owner.MatKhau;
+    return {
+      user: owner,
+      token,
+      role: role,
+      userType: role === 'admin' ? 'admin' : 'host',
+    };
   }
 
-  // 3. Tạo Token (JWT)
-  // Lấy 'MaNguoiDung' để định danh user trong token
-  const token = jwt.sign(
-    { userId: user.MaNguoiDung }, // payload
-    process.env.JWT_SECRET,        // secret key
-    { expiresIn: '5h' }           // Hết hạn sau 5 giờ
-  );
+  // 2. Kiểm tra trong bảng NGUOI_DUNG (Khách hàng thông thường)
+  const customer = await prisma.nGUOI_DUNG.findUnique({
+    where: { Email: normalizedEmail },
+  });
 
-  // 4. Xóa mật khẩu và trả về
-  delete user.MatKhau;
-  return { user, token };
+  if (customer) {
+    if (customer.isActive === false) {
+      throw new Error('Tài khoản của bạn đã bị khóa');
+    }
+
+    const isPasswordMatch = await bcrypt.compare(rawPassword, customer.MatKhau);
+    if (!isPasswordMatch) {
+      throw new Error('Mật khẩu không chính xác');
+    }
+
+    const role = 'customer';
+
+    // Tạo Token (JWT) cho Khách hàng
+    // Chứa userId tương thích tuyệt đối với middleware protect, protectAny
+    const token = jwt.sign(
+      {
+        userId: customer.MaNguoiDung,
+        role: role,
+        email: customer.Email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '5h' }
+    );
+
+    delete customer.MatKhau;
+    return {
+      user: customer,
+      token,
+      role: role,
+      userType: 'customer',
+    };
+  }
+
+  // 3. Nếu không tìm thấy ở bất kỳ bảng nào
+  throw new Error('Email không tồn tại');
 };

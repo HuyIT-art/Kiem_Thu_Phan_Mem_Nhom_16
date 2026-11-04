@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Public & Customer Pages
@@ -90,8 +90,9 @@ function App() {
           }
         />
 
-        {/* --- Owner Auth Routes (Public) --- */}
-        <Route path="/owner/login" element={<OwnerLoginPage />} />
+        {/* --- Owner Auth Routes (Chuyển hướng cổng đăng nhập cũ về /login) --- */}
+        <Route path="/owner/login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="/owner/register" element={<OwnerRegisterPage />} />
         <Route path="/owner/forgot-password" element={<OwnerForgotPasswordPage />} />
         <Route path="/owner/reset-password/:token" element={<OwnerResetPasswordPage />} />

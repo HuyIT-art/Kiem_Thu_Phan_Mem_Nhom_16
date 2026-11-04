@@ -32,10 +32,13 @@ export default function OwnerLayout({ title, subtitle, actions, children }) {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
     localStorage.removeItem('ownerAuthToken');
     localStorage.removeItem('ownerAuthUser');
+    localStorage.removeItem('authRole');
     toast.success('Đã đăng xuất khỏi Kênh Chủ nhà');
-    navigate('/owner/login');
+    navigate('/login');
   };
 
   const navItems = [
@@ -73,13 +76,6 @@ export default function OwnerLayout({ title, subtitle, actions, children }) {
         </div>
 
         <div className="owner-topbar-right">
-          {owner?.Quyen === 'admin' && (
-            <Link to="/admin/dashboard" className="owner-admin-switch-btn" title="Chuyển sang quyền Quản trị viên">
-              <ShieldCheck size={16} />
-              <span>Bảng Quản trị Admin</span>
-            </Link>
-          )}
-
           <Link to="/" className="owner-topbar-link" target="_blank" rel="noreferrer" title="Xem trang chủ khách">
             <Globe size={16} />
             <span>Xem Website Khách</span>

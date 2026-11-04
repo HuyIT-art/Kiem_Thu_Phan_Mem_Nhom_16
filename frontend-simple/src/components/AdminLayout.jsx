@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   LogOut,
   Globe,
-  Briefcase,
   ShieldCheck,
   Menu,
   X,
@@ -33,10 +32,13 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
     localStorage.removeItem('ownerAuthToken');
     localStorage.removeItem('ownerAuthUser');
+    localStorage.removeItem('authRole');
     toast.success('Đã đăng xuất khỏi tài khoản Admin');
-    navigate('/owner/login');
+    navigate('/login');
   };
 
   const navItems = [
@@ -75,11 +77,6 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         </div>
 
         <div className="admin-topbar-right">
-          <Link to="/owner/dashboard" className="admin-topbar-link" title="Mở trang quản lý chủ nhà">
-            <Briefcase size={16} />
-            <span>Kênh Chủ nhà</span>
-          </Link>
-
           <Link to="/" className="admin-topbar-link" target="_blank" rel="noreferrer" title="Mở trang web khách">
             <Globe size={16} />
             <span>Xem Website</span>
